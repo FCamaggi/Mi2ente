@@ -157,7 +157,7 @@ export function GradeCell({
         role="gridcell"
         aria-label={`Nota ${displayValue}`}
         className={[
-          'text-center text-sm font-mono cursor-pointer select-none min-w-[84px] h-10 relative transition-colors',
+          'text-center text-sm font-mono cursor-pointer select-none min-w-[88px] h-10 relative transition-colors',
           editing
             ? 'border-2 border-[var(--color-primary-500)]'
             : `border border-[var(--color-border)] hover:bg-[var(--color-row-hover)] ${bgClass()} ${textClass()}`
