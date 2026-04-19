@@ -7,6 +7,8 @@ import {
 import { coursesApi } from '../../api/courses.api';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { CourseStatsMobile } from './CourseStats.mobile';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 function StatBox({ label, value }) {
   return (
@@ -29,6 +31,7 @@ export function CourseStats({ courseId, passGrade }) {
     queryKey: ['course-stats', courseId],
     queryFn:  () => coursesApi.getStats(courseId)
   });
+  const { isMobile } = useBreakpoint();
 
   const histogramData = useMemo(() => {
     const totals = { '1-2': 0, '2-3': 0, '3-4': 0, '4-5': 0, '5-6': 0, '6-7': 0 };
@@ -52,6 +55,8 @@ export function CourseStats({ courseId, passGrade }) {
   if (!data?.overall) return (
     <EmptyState emoji="📊" title="Sin estadísticas todavía" description="Agrega alumnos y notas para ver el resumen del curso." />
   );
+
+  if (isMobile) return <CourseStatsMobile data={data} passGrade={passGrade} />;
 
   const passRate = Math.round((data.overall.passRate || 0) * 100);
 

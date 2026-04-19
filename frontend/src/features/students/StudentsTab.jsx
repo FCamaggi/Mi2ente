@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { studentsApi } from '../../api/students.api';
+import { StudentsTabMobile } from './StudentsTab.mobile';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 function EditableCell({ value, onSave, placeholder = '', className = '', type = 'text' }) {
   const [editing, setEditing] = useState(false);
@@ -59,6 +61,7 @@ function EditableCell({ value, onSave, placeholder = '', className = '', type = 
 }
 
 export function StudentsTab({ courseId, students, passGrade = 4.0, onStudentClick, onSave }) {
+  const { isMobile } = useBreakpoint();
   const handleFieldSave = useCallback(async (student, field, value) => {
     const studentId = student._id || student.id;
     try {
@@ -68,6 +71,18 @@ export function StudentsTab({ courseId, students, passGrade = 4.0, onStudentClic
       toast.error('No se pudo guardar el cambio');
     }
   }, [courseId, onSave]);
+
+  if (isMobile) {
+    return (
+      <StudentsTabMobile
+        courseId={courseId}
+        students={students}
+        passGrade={passGrade}
+        onStudentClick={onStudentClick}
+        onSave={onSave}
+      />
+    );
+  }
 
   if (students.length === 0) {
     return (

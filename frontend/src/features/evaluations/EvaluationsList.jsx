@@ -5,11 +5,14 @@ import { evaluationsApi } from '../../api/evaluations.api';
 import { TYPE_LABELS, formatDate } from '../../utils/formatters';
 import { EvaluationForm } from './EvaluationForm';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { EvaluationsListMobile } from './EvaluationsList.mobile';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 export function EvaluationsList({ courseId, evaluations, totalWeight, weightValid, onUpdate }) {
   const [editingEval, setEditingEval] = useState(null);
   const [deletingEval, setDeletingEval] = useState(null);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const { isMobile } = useBreakpoint();
 
   const groups = useMemo(() => {
     const map = new Map();
@@ -44,6 +47,38 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
       setLoadingDelete(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <>
+        {!weightValid && (
+          <div className="mb-4 px-4 py-2 border rounded-[var(--radius-sm)] text-sm flex items-center gap-2" style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-border)', color: 'var(--color-warning)' }}>
+            ⚠️ Las ponderaciones suman <strong>{totalWeight.toFixed(1)}%</strong>. Ajusta para que sumen 100%.
+          </div>
+        )}
+        <EvaluationsListMobile
+          evaluations={evaluations}
+          groups={groups}
+          totalWeight={totalWeight}
+          weightValid={weightValid}
+          onEdit={setEditingEval}
+          onDelete={setDeletingEval}
+        />
+        {editingEval && (
+          <EvaluationForm courseId={courseId} evaluation={editingEval} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
+        )}
+        <ConfirmDialog
+          isOpen={Boolean(deletingEval)}
+          title="Eliminar evaluación"
+          message={deletingEval ? `¿Eliminar "${deletingEval.name}"? Se borrarán sus notas.` : ''}
+          confirmLabel="Eliminar"
+          loading={loadingDelete}
+          onClose={() => setDeletingEval(null)}
+          onConfirm={handleDelete}
+        />
+      </>
+    );
+  }
 
   return (
     <>

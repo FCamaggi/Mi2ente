@@ -161,7 +161,7 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
       {mode === 'single' && (
         <form onSubmit={handleSubmitSingle} className="flex flex-col gap-4">
           <Input label="Nombre *" value={form.name} onChange={set('name')} required placeholder="Ej: Prueba 1 — Fracciones" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select label="Tipo" value={form.type} onChange={set('type')}>
               {EVAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </Select>
@@ -187,7 +187,7 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
             <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
               Definición del grupo
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Nombre del grupo *"
                 value={groupName}
@@ -259,45 +259,44 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
             </div>
 
             {rows.map((row, i) => (
-              <div key={i} className="flex items-end gap-2 rounded-lg border border-[var(--color-border)] p-3" style={{ background: 'var(--color-surface-2)' }}>
-                <span className="text-xs mb-2 w-5 text-center shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-                  {i + 1}
-                </span>
-
-                {/* Name */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Nombre</label>
-                  <input
-                    value={row.name}
-                    onChange={e => updateRow(i, 'name', e.target.value)}
-                    placeholder={`Ej: Control ${i + 1}`}
-                    className="w-full px-3 py-1.5 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
-                    style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
-                  />
+              <div key={i} className="rounded-lg border border-[var(--color-border)] p-3" style={{ background: 'var(--color-surface-2)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs w-5 text-center shrink-0" style={{ color: 'var(--color-text-muted)' }}>{i + 1}</span>
+                  {/* Name — full width on its own line */}
+                  <div className="flex-1 min-w-0">
+                    <input
+                      value={row.name}
+                      onChange={e => updateRow(i, 'name', e.target.value)}
+                      placeholder={`Nombre — Ej: Control ${i + 1}`}
+                      className="w-full px-3 py-2 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+                      style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+                    />
+                  </div>
+                  {rows.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRow(i)}
+                      className="p-1.5 rounded hover:bg-red-100 text-red-500 shrink-0"
+                      title="Eliminar fila"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  )}
                 </div>
 
-                {/* Type */}
-                <div className="w-28 shrink-0">
-                  <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Tipo</label>
-                  <select
-                    value={row.type}
-                    onChange={e => updateRow(i, 'type', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm rounded border focus:outline-none"
-                    style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
-                  >
-                    {EVAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
-                </div>
-
-                {/* Weight */}
-                <div className="w-32 shrink-0">
-                  <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
-                    Peso (%)
-                    {weightMode === 'personalizado' && row.fixed && (
-                      <span className="ml-1 text-[var(--color-primary-500)]">fijo</span>
-                    )}
-                  </label>
-                  <div className="flex items-center gap-1">
+                {/* Type + Weight in a row */}
+                <div className="flex gap-2 pl-7">
+                  <div className="flex-1">
+                    <select
+                      value={row.type}
+                      onChange={e => updateRow(i, 'type', e.target.value)}
+                      className="w-full px-2 py-2 text-sm rounded border focus:outline-none"
+                      style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+                    >
+                      {EVAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="w-32 shrink-0 flex items-center gap-1">
                     <input
                       type="number" step="0.01" min="0" max="100"
                       disabled={weightMode === 'equitativo'}
@@ -312,7 +311,7 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
                           : undefined
                       }
                       onChange={e => updateRow(i, 'weight', e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+                      className="flex-1 min-w-0 px-2 py-2 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
                       style={{
                         background: 'var(--color-surface)',
                         border: `1px solid ${weightMode === 'personalizado' && row.fixed ? 'var(--color-primary-400)' : 'var(--color-border)'}`,
@@ -324,39 +323,24 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
                       <button
                         type="button"
                         onClick={() => unfixRow(i)}
-                        title="Desfijar — volver a distribución automática"
-                        className="p-1 rounded hover:bg-[var(--color-surface)] shrink-0 text-base leading-none"
+                        title="Desfijar"
+                        className="p-1 rounded shrink-0 text-base leading-none"
                         style={{ color: 'var(--color-primary-500)' }}
                       >
                         🔒
                       </button>
                     ) : (
-                      <div className="w-6 shrink-0" />
+                      <span className="text-xs shrink-0" style={{ color: 'var(--color-text-muted)' }}>%</span>
                     )}
                   </div>
+                  {groupWeight && (
+                    <div className="w-14 shrink-0 text-center self-center">
+                      <p className="text-xs font-mono font-semibold" style={{ color: 'var(--color-primary-500)' }}>
+                        {((gw * computedWeights[i]) / 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                {/* Effective contribution preview */}
-                {groupWeight && (
-                  <div className="w-16 shrink-0 text-center">
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Aporte</p>
-                    <p className="text-sm font-mono font-semibold" style={{ color: 'var(--color-primary-500)' }}>
-                      {((gw * computedWeights[i]) / 100).toFixed(1)}%
-                    </p>
-                  </div>
-                )}
-
-                {/* Remove */}
-                {rows.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeRow(i)}
-                    className="mb-0.5 p-1 rounded hover:bg-red-100 text-red-500 shrink-0"
-                    title="Eliminar fila"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                )}
               </div>
             ))}
 

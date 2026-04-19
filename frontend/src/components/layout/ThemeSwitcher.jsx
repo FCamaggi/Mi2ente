@@ -10,7 +10,7 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <div className="px-3 py-2">
+    <div className="px-3 py-2" data-tour="theme-switcher">
       <p className="text-xs text-[var(--color-sidebar-text)] opacity-60 mb-2 uppercase tracking-wide">Tema</p>
       <div className="flex flex-wrap gap-1.5">
         {THEMES.map(t => (

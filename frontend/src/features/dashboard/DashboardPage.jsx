@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, BookOpen, Users, BarChart2 } from 'lucide-react';
@@ -7,12 +8,13 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonGrid } from '../../components/ui/LoadingSpinner';
 import { CourseCard } from '../courses/CourseCard';
-import { useState } from 'react';
 import { CourseForm } from '../courses/CourseForm';
+import { useTutorial } from '../../components/tutorial/TutorialProvider';
 
 export function DashboardPage() {
   const { user } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
+  const { registerFirstCourseId } = useTutorial();
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['courses'],
@@ -26,6 +28,11 @@ export function DashboardPage() {
 
   const courses = data?.courses ?? [];
   const allCourses = allData?.courses ?? [];
+
+  useEffect(() => {
+    const firstId = courses[0]?._id || courses[0]?.id;
+    if (firstId) registerFirstCourseId(firstId);
+  }, [courses, registerFirstCourseId]);
   const allAreArchived = !isLoading && courses.length === 0 && allCourses.length > 0;
 
   const totalStudents = courses.reduce((s, c) => s + (c.studentCount || 0), 0);
@@ -41,14 +48,14 @@ export function DashboardPage() {
           </h1>
           {user?.school && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{user.school}</p>}
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)} data-tour="create-course">
           <Plus size={16} /> Nuevo curso
         </Button>
       </div>
 
       {/* Stats summary */}
       {courses.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8" data-tour="dashboard-stats">
           <div className="bg-[var(--color-surface)] rounded-[var(--radius-md)] p-4 border border-[var(--color-border)] shadow-[var(--shadow-sm)] flex items-center gap-4">
             <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--color-primary-50)]">
               <BookOpen size={18} className="text-[var(--color-primary-500)]" />
@@ -102,7 +109,7 @@ export function DashboardPage() {
           action={<Button onClick={() => setShowCreate(true)}><Plus size={16} /> Crear primer curso</Button>}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="dashboard-courses">
           {courses.map(course => (
             <CourseCard key={course._id || course.id} course={course} onUpdate={refetch} />
           ))}

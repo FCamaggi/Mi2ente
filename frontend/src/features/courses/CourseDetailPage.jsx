@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ClipboardList, Download, Plus, Upload, Users, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ClipboardList, ClipboardPlus, Download, HelpCircle, Plus, Upload, UserPlus, Users, BarChart3 } from 'lucide-react';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
+import { CourseDetailPageMobile } from './CourseDetailPage.mobile';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
@@ -21,10 +23,14 @@ import { StudentsTab } from '../students/StudentsTab';
 import { EvaluationForm } from '../evaluations/EvaluationForm';
 import { EvaluationsList } from '../evaluations/EvaluationsList';
 import { getEffectiveWeight } from '../../utils/gradeHelpers';
+import { useTutorial } from '../../components/tutorial/TutorialProvider';
+import { GRADES_STEPS, STUDENTS_STEPS, EVALUATIONS_STEPS, STATS_STEPS } from '../../components/tutorial/tutorialSteps';
 
 export function CourseDetailPage() {
   const { courseId } = useParams();
   const queryClient = useQueryClient();
+  const { isMobile } = useBreakpoint();
+  const { startSectionTour } = useTutorial();
   const importInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('grades');
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -130,134 +136,83 @@ export function CourseDetailPage() {
   if (!course) return <LoadingSpinner className="py-16" />;
 
   const tabs = [
-    { id: 'grades', label: 'Libro de notas', icon: ClipboardList },
-    { id: 'students', label: `Alumnos (${students.length})`, icon: Users },
-    { id: 'evaluations', label: `Evaluaciones (${evaluations.length})`, icon: ClipboardList },
-    { id: 'stats', label: 'Estadísticas', icon: BarChart3 }
+    { id: 'grades',      label: 'Libro de notas',                  icon: ClipboardList, helpSteps: GRADES_STEPS },
+    { id: 'students',    label: `Alumnos (${students.length})`,    icon: Users,         helpSteps: STUDENTS_STEPS },
+    { id: 'evaluations', label: `Evaluaciones (${evaluations.length})`, icon: ClipboardList, helpSteps: EVALUATIONS_STEPS },
+    { id: 'stats',       label: 'Estadísticas',                    icon: BarChart3,     helpSteps: STATS_STEPS },
   ];
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-4 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-        <Link to="/courses" className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] mb-2 transition-colors">
-          <ChevronLeft size={16} /> Mis cursos
-        </Link>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold font-display text-[var(--color-text-primary)]">{course.name}</h1>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              {[course.subject, course.level, course.school, course.academicYear].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-          <div className="flex gap-2 flex-wrap items-center">
-            <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImportStudents} />
-            <Button variant="secondary" size="sm" onClick={handleExportExcel} title="Exportar a Excel">
-              <Download size={14} /> <span className="hidden sm:inline">Excel</span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handleExportPdf} title="Exportar a PDF">
-              <Download size={14} /> <span className="hidden sm:inline">PDF</span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => importInputRef.current?.click()} loading={importing} title="Importar alumnos">
-              <Upload size={14} /> <span className="hidden sm:inline">Importar</span>
-            </Button>
-            {(activeTab === 'grades' || activeTab === 'students') && (
-              <Button size="sm" onClick={() => setShowAddStudent(true)}>
-                <Plus size={14} /> Alumno
-              </Button>
-            )}
-            {(activeTab === 'grades' || activeTab === 'evaluations') && (
-              <Button size="sm" onClick={() => setShowAddEval(true)}>
-                <Plus size={14} /> Evaluación
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex mt-4 overflow-x-auto -mb-px scrollbar-none gap-1 border-b border-[var(--color-border)]">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap rounded-t-[var(--radius-sm)] transition-colors shrink-0 ${
-                activeTab === id
-                  ? 'bg-[var(--color-bg)] text-[var(--color-primary-500)] border-t border-x border-[var(--color-border)] border-b border-b-[var(--color-bg)] -mb-px'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              }`}
-            >
-              <Icon size={14} /> {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tab content: grades/students handle their own internal scroll; others scroll freely */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {activeTab === 'grades' && (
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            {students.length === 0 || evaluations.length === 0 ? (
-              <EmptyState
-                emoji="📝"
-                title={students.length === 0 ? 'Agrega alumnos para comenzar' : 'Define las evaluaciones del curso primero'}
-                action={
-                  <div className="flex gap-3">
-                    <Button onClick={() => setShowAddStudent(true)}><Plus size={16} /> Alumno</Button>
-                    <Button variant="secondary" onClick={() => setShowAddEval(true)}><Plus size={16} /> Evaluación</Button>
-                  </div>
-                }
-              />
-            ) : (
-              <GradeGrid
-                students={students}
-                evaluations={evaluations}
-                grades={grades}
-                course={course}
-                onStudentClick={setSelectedStudent}
-                onGradesSaved={invalidateCourseData}
-              />
-            )}
-          </div>
-        )}
-
-        {activeTab === 'students' && (
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <StudentsTab
-              courseId={courseId}
+  const tabContent = (
+    <div className="flex-1 min-h-0 flex flex-col">
+      {activeTab === 'grades' && (
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {students.length === 0 || evaluations.length === 0 ? (
+            <EmptyState
+              emoji="📝"
+              title={students.length === 0 ? 'Agrega alumnos para comenzar' : 'Define las evaluaciones del curso primero'}
+              action={
+                <div className="flex gap-3">
+                  <Button onClick={() => setShowAddStudent(true)}><Plus size={16} /> Alumno</Button>
+                  <Button variant="secondary" onClick={() => setShowAddEval(true)}><Plus size={16} /> Evaluación</Button>
+                </div>
+              }
+            />
+          ) : (
+            <GradeGrid
               students={students}
-              passGrade={course?.gradeConfig?.passGrade ?? 4.0}
+              evaluations={evaluations}
+              grades={grades}
+              course={course}
               onStudentClick={setSelectedStudent}
-              onSave={invalidateCourseData}
+              onGradesSaved={invalidateCourseData}
+            />
+          )}
+        </div>
+      )}
+
+      {activeTab === 'students' && (
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <StudentsTab
+            courseId={courseId}
+            students={students}
+            passGrade={course?.gradeConfig?.passGrade ?? 4.0}
+            onStudentClick={setSelectedStudent}
+            onSave={invalidateCourseData}
+          />
+        </div>
+      )}
+
+      {activeTab === 'evaluations' && (
+        <div className="flex-1 overflow-y-auto">
+          <div className={`${isMobile ? 'p-4' : 'p-6 max-w-3xl mx-auto'}`}>
+            <div className="flex justify-between mb-4">
+              <h2 className="font-semibold text-[var(--color-text-primary)]">Evaluaciones</h2>
+              <Button size="sm" onClick={() => setShowAddEval(true)}><Plus size={14} /> Agregar</Button>
+            </div>
+            <EvaluationsList
+              courseId={courseId}
+              evaluations={evaluations}
+              totalWeight={evalsData?.totalWeight ?? 0}
+              weightValid={evalsData?.weightValid ?? false}
+              onUpdate={async () => {
+                await refetchEvals();
+                await invalidateCourseData();
+              }}
             />
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === 'evaluations' && (
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 max-w-3xl mx-auto">
-              <div className="flex justify-between mb-4">
-                <h2 className="font-semibold text-[var(--color-text-primary)]">Evaluaciones</h2>
-                <Button size="sm" onClick={() => setShowAddEval(true)}><Plus size={14} /> Agregar</Button>
-              </div>
-              <EvaluationsList
-                courseId={courseId}
-                evaluations={evaluations}
-                totalWeight={evalsData?.totalWeight ?? 0}
-                weightValid={evalsData?.weightValid ?? false}
-                onUpdate={async () => {
-                  await refetchEvals();
-                  await invalidateCourseData();
-                }}
-              />
-            </div>
-          </div>
-        )}
+      {activeTab === 'stats' && (
+        <div className="flex-1 overflow-y-auto">
+          <CourseStats courseId={courseId} passGrade={course.gradeConfig?.passGrade ?? 4} />
+        </div>
+      )}
+    </div>
+  );
 
-        {activeTab === 'stats' && (
-          <div className="flex-1 overflow-y-auto">
-            <CourseStats courseId={courseId} passGrade={course.gradeConfig?.passGrade ?? 4} />
-          </div>
-        )}
-      </div>
-
+  const modals = (
+    <>
       {showAddStudent && (
         <StudentForm
           courseId={courseId}
@@ -289,7 +244,6 @@ export function CourseDetailPage() {
           onUpdate={invalidateCourseData}
         />
       )}
-
       <Modal isOpen={Boolean(importSummary)} title="Resultado de importación" onClose={() => setImportSummary(null)} size="sm">
         <div className="flex flex-col gap-3 text-sm">
           <p className="text-[var(--color-text-primary)]">Importados: <strong>{importSummary?.imported ?? 0}</strong></p>
@@ -310,6 +264,113 @@ export function CourseDetailPage() {
           </div>
         </div>
       </Modal>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Mobile header — compact, no tabs */}
+        <div className="px-4 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+          <Link to="/courses" className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <ChevronLeft size={14} /> Mis cursos
+          </Link>
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <div className="min-w-0" data-tour="course-header">
+              <h1 className="text-base font-bold font-display truncate" style={{ color: 'var(--color-text-primary)' }}>{course.name}</h1>
+              <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                {[course.subject, course.level, course.academicYear].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            <div className="flex gap-1.5 items-center shrink-0">
+              <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImportStudents} />
+              <Button variant="secondary" size="sm" onClick={handleExportExcel} title="Excel" data-tour="export-btn"><Download size={14} /></Button>
+              <Button variant="secondary" size="sm" onClick={handleExportPdf} title="PDF"><Download size={14} /></Button>
+              <Button variant="secondary" size="sm" onClick={() => importInputRef.current?.click()} loading={importing} title="Importar" data-tour="import-btn"><Upload size={14} /></Button>
+              {(activeTab === 'grades' || activeTab === 'students') && (
+                <Button size="sm" onClick={() => setShowAddStudent(true)} title="Agregar alumno" data-tour="add-student-btn"><UserPlus size={14} /></Button>
+              )}
+              {(activeTab === 'grades' || activeTab === 'evaluations') && (
+                <Button size="sm" onClick={() => setShowAddEval(true)} title="Agregar evaluación" data-tour="add-eval-btn"><ClipboardPlus size={14} /></Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <CourseDetailPageMobile activeTab={activeTab} onTabChange={setActiveTab}>
+          {tabContent}
+        </CourseDetailPageMobile>
+        {modals}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-4 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+        <Link to="/courses" className="flex items-center gap-1 text-sm mb-2 transition-colors" style={{ color: 'var(--color-text-secondary)' }}>
+          <ChevronLeft size={16} /> Mis cursos
+        </Link>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div data-tour="course-header">
+            <h1 className="text-xl font-bold font-display text-[var(--color-text-primary)]">{course.name}</h1>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {[course.subject, course.level, course.school, course.academicYear].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImportStudents} />
+            <Button variant="secondary" size="sm" onClick={handleExportExcel} title="Exportar a Excel" data-tour="export-btn">
+              <Download size={14} /> <span className="hidden sm:inline">Excel</span>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleExportPdf} title="Exportar a PDF">
+              <Download size={14} /> <span className="hidden sm:inline">PDF</span>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => importInputRef.current?.click()} loading={importing} title="Importar alumnos" data-tour="import-btn">
+              <Upload size={14} /> <span className="hidden sm:inline">Importar</span>
+            </Button>
+            {(activeTab === 'grades' || activeTab === 'students') && (
+              <Button size="sm" onClick={() => setShowAddStudent(true)} data-tour="add-student-btn">
+                <Plus size={14} /> Alumno
+              </Button>
+            )}
+            {(activeTab === 'grades' || activeTab === 'evaluations') && (
+              <Button size="sm" onClick={() => setShowAddEval(true)} data-tour="add-eval-btn">
+                <Plus size={14} /> Evaluación
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex mt-4 overflow-x-auto -mb-px scrollbar-none gap-1 border-b border-[var(--color-border)]" data-tour="course-tabs">
+          {tabs.map(({ id, label, icon: Icon, helpSteps }) => (
+            <div key={id} className="flex items-center shrink-0">
+              <button
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap rounded-t-[var(--radius-sm)] transition-colors ${
+                  activeTab === id
+                    ? 'bg-[var(--color-bg)] text-[var(--color-primary-500)] border-t border-x border-[var(--color-border)] border-b border-b-[var(--color-bg)] -mb-px'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                <Icon size={14} /> {label}
+              </button>
+              {activeTab === id && (
+                <button
+                  onClick={() => startSectionTour(helpSteps)}
+                  title="Ver ayuda de esta sección"
+                  className="ml-0.5 p-1.5 rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:text-[var(--color-primary-500)] transition-colors"
+                >
+                  <HelpCircle size={13} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {tabContent}
+      {modals}
     </div>
   );
 }

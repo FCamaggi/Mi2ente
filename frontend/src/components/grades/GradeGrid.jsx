@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { GradeCell } from './GradeCell';
 import { GradeStats } from './GradeStats';
+import { GradeGridMobile } from './GradeGrid.mobile';
 import { Badge } from '../ui/Badge';
 import { gradesApi } from '../../api/grades.api';
 import { formatShortDate } from '../../utils/formatters';
 import { useStats } from '../../hooks/useStats';
 import { getEffectiveWeight, getCourseWeightTotal } from '../../utils/gradeHelpers';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 export function GradeGrid({
   students,
@@ -24,9 +26,8 @@ export function GradeGrid({
     return map;
   });
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState(
-    () => window.innerWidth < 768 ? 'compact' : 'full'
-  );
+  const [viewMode, setViewMode] = useState('full');
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     const map = {};
@@ -103,8 +104,21 @@ export function GradeGrid({
     document.querySelector(selector)?.focus();
   }, [filteredStudents, visibleEvaluations, viewMode]);
 
+  if (isMobile) {
+    return (
+      <GradeGridMobile
+        students={students}
+        evaluations={evaluations}
+        grades={grades}
+        course={course}
+        onStudentClick={onStudentClick}
+        onSave={handleSave}
+      />
+    );
+  }
+
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col overflow-hidden" data-tour="grade-grid">
       {!weightOk && (
         <div role="alert" className="px-4 py-2 border-b text-sm flex items-center gap-2" style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-border)', color: 'var(--color-warning)' }}>
           <span aria-hidden="true">⚠️</span>

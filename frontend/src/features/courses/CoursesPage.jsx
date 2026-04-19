@@ -42,7 +42,7 @@ export function CoursesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-[var(--radius-sm)] border border-[var(--color-border)] overflow-hidden">
+          <div className="flex rounded-[var(--radius-sm)] border border-[var(--color-border)] overflow-hidden" data-tour="courses-filter">
             {['active', 'archived'].map((status) => (
               <button
                 key={status}
@@ -53,7 +53,7 @@ export function CoursesPage() {
               </button>
             ))}
           </div>
-          <Button onClick={() => setShowCreate(true)}><Plus size={16} /> Nuevo curso</Button>
+          <Button onClick={() => setShowCreate(true)} data-tour="courses-create-btn"><Plus size={16} /> Nuevo curso</Button>
         </div>
       </div>
 
@@ -67,7 +67,7 @@ export function CoursesPage() {
           action={statusFilter === 'active' ? <Button onClick={() => setShowCreate(true)}><Plus size={16} /> Crear curso</Button> : undefined}
         />
       ) : (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8" data-tour="courses-grid">
           {groupedBySchool.map(([school, schoolCourses]) => (
             <section key={school}>
               <div className="mb-4 flex items-end justify-between gap-3">

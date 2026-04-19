@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, Settings, LogOut, X, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth.api';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Mi2enteLogo } from './Mi2enteLogo';
+import { useTutorial } from '../tutorial/TutorialProvider';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,6 +15,7 @@ const navItems = [
 
 export function Sidebar({ onClose }) {
   const { user, logout } = useAuthStore();
+  const { startFullTour } = useTutorial();
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch {}
@@ -38,7 +40,7 @@ export function Sidebar({ onClose }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 overflow-y-auto">
+      <nav className="flex-1 py-4 overflow-y-auto" data-tour="sidebar-nav">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -63,8 +65,17 @@ export function Sidebar({ onClose }) {
         <ThemeSwitcher />
       </div>
 
-      {/* Logout */}
-      <div className="p-3 border-t border-white/10">
+      {/* Help + Logout */}
+      <div className="p-3 border-t border-white/10 flex flex-col gap-1">
+        <button
+          onClick={() => { startFullTour(); onClose?.(); }}
+          title="Ver tutorial guiado"
+          data-tour="tutorial-btn"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm text-[var(--color-sidebar-text)] hover:bg-white/10 transition-all"
+        >
+          <HelpCircle size={16} />
+          Tutorial
+        </button>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm text-[var(--color-sidebar-text)] hover:bg-white/10 transition-all"
