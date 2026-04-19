@@ -27,7 +27,10 @@ export function ProfilePage() {
     queryFn: schoolsApi.list
   });
 
-  const invalidateSchools = () => queryClient.invalidateQueries({ queryKey: ['schools'] });
+  const invalidateSchools = () => {
+    queryClient.invalidateQueries({ queryKey: ['schools'] });
+    queryClient.invalidateQueries({ queryKey: ['courses'] });
+  };
 
   const handleAddSchool = async (e) => {
     e.preventDefault();

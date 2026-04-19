@@ -3,6 +3,7 @@ import { LayoutDashboard, BookOpen, User, Settings, LogOut, X } from 'lucide-rea
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth.api';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { Mi2enteLogo } from './Mi2enteLogo';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,10 +24,10 @@ export function Sidebar({ onClose }) {
     <div className="h-full flex flex-col bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-white/10">
-        <div>
-          <h1 className="text-lg font-bold font-display">Mi2ente</h1>
+        <div className="flex flex-col gap-0.5">
+          <Mi2enteLogo className="h-5 w-auto" />
           {user && (
-            <p className="text-xs opacity-70 mt-0.5 truncate max-w-[160px]">{user.name}</p>
+            <p className="text-xs opacity-60 truncate max-w-[160px]">{user.name}</p>
           )}
         </div>
         {onClose && (

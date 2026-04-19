@@ -1,4 +1,5 @@
 const School = require('../models/School');
+const Course = require('../models/Course');
 
 async function list(req, res, next) {
   try {
@@ -45,6 +46,15 @@ async function update(req, res, next) {
         error: { code: 'NOT_FOUND', message: 'Colegio no encontrado' }
       });
     }
+
+    // Cascade: archivar cursos activos cuando se desactiva el colegio
+    if (isActive === false) {
+      await Course.updateMany(
+        { schoolId: school._id, userId: req.userId, status: 'active' },
+        { status: 'archived' }
+      );
+    }
+
     res.json({ success: true, data: { school } });
   } catch (err) { next(err); }
 }

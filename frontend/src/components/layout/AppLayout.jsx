@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
+import { Mi2enteLogo } from './Mi2enteLogo';
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,7 +35,7 @@ export function AppLayout() {
           >
             <Menu size={20} />
           </button>
-          <span className="font-bold font-display text-[var(--color-text-primary)]">Mi2ente</span>
+          <Mi2enteLogo className="h-5 w-auto text-[var(--color-text-primary)]" />
         </header>
 
         <main key={location.pathname} className="flex-1 overflow-y-auto page-enter">

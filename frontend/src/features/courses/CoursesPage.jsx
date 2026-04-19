@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { coursesApi } from '../../api/courses.api';
 import { Button } from '../../components/ui/Button';
@@ -11,11 +11,14 @@ import { CourseForm } from './CourseForm';
 export function CoursesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState('active');
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['courses', statusFilter],
     queryFn: () => coursesApi.list({ status: statusFilter })
   });
+
+  const invalidateCourses = () => queryClient.invalidateQueries({ queryKey: ['courses'] });
 
   const courses = data?.courses ?? [];
 
@@ -75,7 +78,7 @@ export function CoursesPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {schoolCourses.map((course) => (
-                  <CourseCard key={course._id || course.id} course={course} onUpdate={refetch} />
+                  <CourseCard key={course._id || course.id} course={course} onUpdate={invalidateCourses} />
                 ))}
               </div>
             </section>
@@ -83,7 +86,7 @@ export function CoursesPage() {
         </div>
       )}
 
-      {showCreate && <CourseForm onClose={() => setShowCreate(false)} onSave={() => { setShowCreate(false); refetch(); }} />}
+      {showCreate && <CourseForm onClose={() => setShowCreate(false)} onSave={() => { setShowCreate(false); invalidateCourses(); }} />}
     </div>
   );
 }

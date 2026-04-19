@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 
 const client = axios.create({
@@ -7,9 +8,41 @@ const client = axios.create({
   timeout: 15000
 });
 
+// Render cold-start warning: show a toast if any request takes > 5 s
+let _pendingCount = 0;
+let _slowTimer = null;
+let _slowToastId = null;
+
+function _onStart() {
+  _pendingCount++;
+  if (!_slowTimer) {
+    _slowTimer = setTimeout(() => {
+      if (_pendingCount > 0 && !_slowToastId) {
+        _slowToastId = toast(
+          '⏳ Esto está tardando más de lo usual. Es posible que el servidor esté iniciando desde estado inactivo (Render). Espera unos segundos…',
+          { duration: Infinity, style: { maxWidth: 380, fontSize: '0.8rem' } }
+        );
+      }
+    }, 5000);
+  }
+}
+
+function _onEnd() {
+  _pendingCount = Math.max(0, _pendingCount - 1);
+  if (_pendingCount === 0) {
+    clearTimeout(_slowTimer);
+    _slowTimer = null;
+    if (_slowToastId) {
+      toast.dismiss(_slowToastId);
+      _slowToastId = null;
+    }
+  }
+}
+
 client.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  _onStart();
   return config;
 });
 
@@ -22,8 +55,9 @@ function processQueue(error, token = null) {
 }
 
 client.interceptors.response.use(
-  (res) => res,
+  (res) => { _onEnd(); return res; },
   async (error) => {
+    _onEnd();
     const original = error.config;
     if (error.response?.status === 401 && !original._retry && !original.url?.includes('/auth/')) {
       if (isRefreshing) {
