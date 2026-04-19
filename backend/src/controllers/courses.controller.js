@@ -29,7 +29,9 @@ async function list(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const course = await Course.create({ ...req.body, userId: req.userId });
+    const body = { ...req.body, userId: req.userId };
+    if (!body.schoolId) body.schoolId = null;
+    const course = await Course.create(body);
     res.status(201).json({ success: true, data: { course } });
   } catch (err) { next(err); }
 }
@@ -45,9 +47,11 @@ async function getOne(req, res, next) {
 
 async function update(req, res, next) {
   try {
+    const body = { ...req.body };
+    if ('schoolId' in body && !body.schoolId) body.schoolId = null;
     const course = await Course.findOneAndUpdate(
       { _id: req.params.courseId, userId: req.userId },
-      req.body,
+      body,
       { new: true, runValidators: true }
     );
     if (!course) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Curso no encontrado' } });
