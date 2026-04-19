@@ -1,0 +1,315 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== DEFAULT (fallback) ===== */
+:root {
+  --color-primary-50:  #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #db2777;
+  --color-primary-700: #be185d;
+  --color-accent:      #a855f7;
+  --color-accent-soft: #f3e8ff;
+  --color-bg:          #fff7fb;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #fdf4f9;
+  --color-border:      #fce7f3;
+  --color-text-primary:   #1e1b4b;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted:     #d1d5db;
+  --color-success:     #10b981;
+  --color-danger:      #ef4444;
+  --color-warning:     #f59e0b;
+  --color-info:        #6366f1;
+  --color-sidebar-bg:   #1e1b4b;
+  --color-sidebar-text: #e0d7f7;
+  --color-sidebar-active: #ec4899;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #fdf4f9;
+  --color-row-hover:   #fce7f3;
+  --shadow-sm: 0 1px 3px rgba(236, 72, 153, 0.1);
+  --shadow-md: 0 4px 12px rgba(236, 72, 153, 0.15);
+  --font-display: 'Nunito', 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  /* Badge semantic colors */
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
+/* ===== ROSA SAKURA ===== */
+:root[data-theme="rosa"] {
+  --color-primary-50:  #fdf2f8;
+  --color-primary-100: #fce7f3;
+  --color-primary-200: #fbcfe8;
+  --color-primary-300: #f9a8d4;
+  --color-primary-400: #f472b6;
+  --color-primary-500: #ec4899;
+  --color-primary-600: #db2777;
+  --color-primary-700: #be185d;
+  --color-accent:      #a855f7;
+  --color-accent-soft: #f3e8ff;
+  --color-bg:          #fff7fb;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #fdf4f9;
+  --color-border:      #fce7f3;
+  --color-text-primary:   #5c0e0e;
+  --color-text-secondary: #aa0f0f;
+  --color-sidebar-bg:   #a5326b;
+  --color-sidebar-text: #f0c7db;
+  --color-sidebar-active: #ec4899;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #fdf4f9;
+  --color-row-hover:   #fce7f3;
+  --shadow-sm: 0 1px 3px rgba(236, 72, 153, 0.1);
+  --shadow-md: 0 4px 12px rgba(236, 72, 153, 0.15);
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
+/* ===== AZUL OCÉANO ===== */
+:root[data-theme="oceano"] {
+  --color-primary-50:  #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-accent:      #06b6d4;
+  --color-accent-soft: #e0f2fe;
+  --color-bg:          #f0f9ff;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #f0f9ff;
+  --color-border:      #bae6fd;
+  --color-text-primary:   #0c4a6e;
+  --color-text-secondary: #6b7280;
+  --color-sidebar-bg:   #0c4a6e;
+  --color-sidebar-text: #bae6fd;
+  --color-sidebar-active: #0ea5e9;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #f0f9ff;
+  --color-row-hover:   #e0f2fe;
+  --shadow-sm: 0 1px 3px rgba(14, 165, 233, 0.1);
+  --shadow-md: 0 4px 12px rgba(14, 165, 233, 0.15);
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
+/* ===== VERDE BOSQUE ===== */
+:root[data-theme="bosque"] {
+  --color-primary-50:  #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #059669;
+  --color-primary-600: #047857;
+  --color-primary-700: #065f46;
+  --color-accent:      #34d399;
+  --color-accent-soft: #d1fae5;
+  --color-bg:          #f0fdf4;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #f0fdf4;
+  --color-border:      #a7f3d0;
+  --color-text-primary:   #064e3b;
+  --color-text-secondary: #6b7280;
+  --color-sidebar-bg:   #064e3b;
+  --color-sidebar-text: #a7f3d0;
+  --color-sidebar-active: #34d399;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #f0fdf4;
+  --color-row-hover:   #d1fae5;
+  --shadow-sm: 0 1px 3px rgba(5, 150, 105, 0.1);
+  --shadow-md: 0 4px 12px rgba(5, 150, 105, 0.15);
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
+/* ===== NOCHE ÍNDIGO ===== */
+:root[data-theme="noche"] {
+  --color-primary-50:  #1e1b4b;
+  --color-primary-100: #312e81;
+  --color-primary-200: #3730a3;
+  --color-primary-300: #4338ca;
+  --color-primary-400: #6366f1;
+  --color-primary-500: #818cf8;
+  --color-primary-600: #6366f1;
+  --color-primary-700: #4f46e5;
+  --color-accent:      #c084fc;
+  --color-accent-soft: #312e81;
+  --color-bg:          #0f0f1a;
+  --color-surface:     #1a1a2e;
+  --color-surface-2:   #16213e;
+  --color-border:      #2d2d4e;
+  --color-text-primary:   #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted:     #475569;
+  --color-sidebar-bg:   #0a0a16;
+  --color-sidebar-text: #a5b4fc;
+  --color-sidebar-active: #818cf8;
+  --color-grade-fail:     #3b1616;
+  --color-grade-ok:       #0d2e1a;
+  --color-grade-ok-text:  #6ee7b7;
+  --color-grade-fail-text:#fca5a5;
+  --color-row-alt:     #1a1a2e;
+  --color-row-hover:   #1e1e3a;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --badge-academic-bg:  #1e3a5f; --badge-academic-text:  #93c5fd;
+  --badge-conduct-bg:   #431407; --badge-conduct-text:   #fdba74;
+  --badge-positive-bg:  #052e16; --badge-positive-text:  #86efac;
+  --badge-guardian-bg:  #2e1065; --badge-guardian-text:  #d8b4fe;
+  --badge-other-bg:     #1f2937; --badge-other-text:     #9ca3af;
+}
+
+/* ===== OTOÑO DORADO ===== */
+:root[data-theme="otono"] {
+  --color-primary-50:  #fffbeb;
+  --color-primary-100: #fef3c7;
+  --color-primary-200: #fde68a;
+  --color-primary-300: #fcd34d;
+  --color-primary-400: #fbbf24;
+  --color-primary-500: #f59e0b;
+  --color-primary-600: #d97706;
+  --color-primary-700: #b45309;
+  --color-accent:      #ef4444;
+  --color-accent-soft: #fef3c7;
+  --color-bg:          #fffbeb;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #fffbeb;
+  --color-border:      #fde68a;
+  --color-text-primary:   #451a03;
+  --color-text-secondary: #78716c;
+  --color-sidebar-bg:   #451a03;
+  --color-sidebar-text: #fde68a;
+  --color-sidebar-active: #f59e0b;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #fffbeb;
+  --color-row-hover:   #fef3c7;
+  --shadow-sm: 0 1px 3px rgba(245, 158, 11, 0.1);
+  --shadow-md: 0 4px 12px rgba(245, 158, 11, 0.18);
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
+/* ===== BASE ===== */
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+* { box-sizing: border-box; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+
+/* Hide scrollbar utility */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Grade cell input */
+.grade-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  text-align: center;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  outline: none;
+  padding: 0;
+}
+
+/* Table sticky columns */
+.sticky-col {
+  position: sticky;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+@keyframes slide-in-panel {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+}
+
+/* Sidebar slide-in on mobile */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.sidebar-mobile-enter {
+  animation: slide-in-left 220ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Page content fade on route change */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-fade-in 180ms ease-out;
+}

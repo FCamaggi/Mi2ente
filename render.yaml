@@ -1,0 +1,53 @@
+services:
+  # ── Backend — Express API ────────────────────────────────────────────────
+  - type: web
+    name: mi2ente-api
+    env: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false          # Set in Render dashboard → MongoDB Atlas connection string
+      - key: JWT_ACCESS_SECRET
+        generateValue: true  # Render auto-generates a secure random value
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        sync: false          # Set to https://mi2ente-app.onrender.com after frontend deploys
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+
+  # ── Frontend — Vite static build ─────────────────────────────────────────
+  - type: web
+    name: mi2ente-app
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: VITE_API_URL
+        sync: false          # Set to https://mi2ente-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
