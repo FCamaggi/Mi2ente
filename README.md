@@ -1,4 +1,4 @@
-# 📚 ProfeApp — Plataforma de Gestión Docente
+# 📚 Mi2ente — Plataforma de Gestión Docente
 
 > Aplicación web para profesores/as. Gestiona cursos, alumnos, evaluaciones, notas y observaciones desde cualquier dispositivo.
 
