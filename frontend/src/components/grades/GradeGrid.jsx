@@ -144,12 +144,12 @@ export function GradeGrid({
       )}
 
       <div className="overflow-auto flex-1">
-        <table className="w-full border-collapse text-sm" role="grid" style={{ minWidth: `${Math.max(600, 280 + visibleEvaluations.length * 88)}px` }}>
+        <table className="w-full border-collapse text-sm" role="grid" style={{ tableLayout: 'fixed', minWidth: `${Math.max(600, 520 + visibleEvaluations.length * 88)}px` }}>
           <thead>
             <tr className="bg-[var(--color-surface-2)]">
               <th className="sticky left-0 z-20 bg-[var(--color-surface-2)] text-left px-3 py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] font-medium w-10">N°</th>
               <th className="sticky left-10 z-20 bg-[var(--color-surface-2)] text-left px-3 py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] font-medium w-40 max-w-[160px]">Apellido</th>
-              <th className="sticky left-[200px] z-20 bg-[var(--color-surface-2)] text-left px-3 py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] font-medium min-w-[100px]">Nombre</th>
+              <th className="sticky left-[200px] z-20 bg-[var(--color-surface-2)] text-left px-3 py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] font-medium w-[120px]">Nombre</th>
               {visibleEvaluations.map((evaluation) => (
                 <th key={evaluation._id || evaluation.id} className="px-2 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)] font-medium text-center max-w-[96px]">
                   <div className="text-xs leading-tight truncate" title={evaluation.name}>{evaluation.name}</div>
@@ -169,12 +169,12 @@ export function GradeGrid({
 
               const stickyBg = rowBg;
               return (
-                <tr key={student.id} className={`${rowBg} hover:bg-[var(--color-row-hover)] transition-colors`}>
-                  <td className={`sticky left-0 z-10 px-3 border border-[var(--color-border)] text-center text-[var(--color-text-secondary)] text-xs ${stickyBg} hover:bg-[var(--color-row-hover)] transition-colors`}>{student.listNumber}</td>
-                  <td className={`sticky left-10 z-10 px-3 border border-[var(--color-border)] text-[var(--color-text-primary)] font-medium cursor-pointer hover:text-[var(--color-primary-500)] ${stickyBg} hover:bg-[var(--color-row-hover)] transition-colors w-40 max-w-[160px] truncate`} onClick={() => onStudentClick?.(student)} title={student.lastName}>
+                <tr key={student.id} className={`group ${rowBg} hover:bg-[var(--color-row-hover)] transition-colors`}>
+                  <td className={`sticky left-0 z-10 px-3 border border-[var(--color-border)] text-center text-[var(--color-text-secondary)] text-xs ${stickyBg} group-hover:bg-[var(--color-row-hover)] transition-colors`}>{student.listNumber}</td>
+                  <td className={`sticky left-10 z-10 px-3 border border-[var(--color-border)] text-[var(--color-text-primary)] font-medium cursor-pointer hover:text-[var(--color-primary-500)] ${stickyBg} group-hover:bg-[var(--color-row-hover)] transition-colors w-40 max-w-[160px] truncate`} onClick={() => onStudentClick?.(student)} title={student.lastName}>
                     {student.lastName}
                   </td>
-                  <td className={`sticky left-[200px] z-10 px-3 border border-[var(--color-border)] text-[var(--color-text-primary)] ${stickyBg} hover:bg-[var(--color-row-hover)] transition-colors`}>{student.firstName}</td>
+                  <td className={`sticky left-[200px] z-10 px-3 border border-[var(--color-border)] text-[var(--color-text-primary)] ${stickyBg} group-hover:bg-[var(--color-row-hover)] transition-colors w-[120px] truncate`}>{student.firstName}</td>
                   {visibleEvaluations.map((evaluation) => {
                     const evaluationId = evaluation._id || evaluation.id;
                     const grade = grades[`${student.id}_${evaluationId}`];
