@@ -30,8 +30,8 @@ Auth       →  JWT (access token 15m + refresh token 7d)
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/profe-app.git
-cd profe-app
+git clone https://github.com/tu-usuario/Mi2ente.git
+cd Mi2ente
 
 # 2. Backend
 cd backend
