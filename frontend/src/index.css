@@ -122,6 +122,42 @@
   --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
 }
 
+/* ===== LILA LAVANDA ===== */
+:root[data-theme="lila"] {
+  --color-primary-50:  #faf5ff;
+  --color-primary-100: #f3e8ff;
+  --color-primary-200: #e9d5ff;
+  --color-primary-300: #d8b4fe;
+  --color-primary-400: #c084fc;
+  --color-primary-500: #a855f7;
+  --color-primary-600: #9333ea;
+  --color-primary-700: #7e22ce;
+  --color-accent:      #8b5cf6;
+  --color-accent-soft: #ede9fe;
+  --color-bg:          #fcf8ff;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #f7edff;
+  --color-border:      #e9d5ff;
+  --color-text-primary:   #4c1d95;
+  --color-text-secondary: #6b7280;
+  --color-sidebar-bg:   #4c1d95;
+  --color-sidebar-text: #ddd6fe;
+  --color-sidebar-active: #a855f7;
+  --color-grade-fail:     #fee2e2;
+  --color-grade-ok:       #f0fdf4;
+  --color-grade-ok-text:  #047857;
+  --color-grade-fail-text:#b91c1c;
+  --color-row-alt:     #f8f1ff;
+  --color-row-hover:   #f3e8ff;
+  --shadow-sm: 0 1px 3px rgba(147, 51, 234, 0.1);
+  --shadow-md: 0 4px 12px rgba(147, 51, 234, 0.18);
+  --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
+  --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
+  --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
+  --badge-guardian-bg:  #f3e8ff; --badge-guardian-text:  #6d28d9;
+  --badge-other-bg:     #f3f4f6; --badge-other-text:     #374151;
+}
+
 /* ===== VERDE BOSQUE ===== */
 :root[data-theme="bosque"] {
   --color-primary-50:  #ecfdf5;
@@ -197,33 +233,33 @@
 
 /* ===== OTOÑO DORADO ===== */
 :root[data-theme="otono"] {
-  --color-primary-50:  #fffbeb;
-  --color-primary-100: #fef3c7;
-  --color-primary-200: #fde68a;
-  --color-primary-300: #fcd34d;
-  --color-primary-400: #fbbf24;
-  --color-primary-500: #f59e0b;
-  --color-primary-600: #d97706;
-  --color-primary-700: #b45309;
-  --color-accent:      #ef4444;
-  --color-accent-soft: #fef3c7;
-  --color-bg:          #fffbeb;
+  --color-primary-50:  #fdf8f3;
+  --color-primary-100: #faecd9;
+  --color-primary-200: #f5d8b4;
+  --color-primary-300: #edbe8d;
+  --color-primary-400: #e49d62;
+  --color-primary-500: #d9773f;
+  --color-primary-600: #bf5a2f;
+  --color-primary-700: #8f3f22;
+  --color-accent:      #b45309;
+  --color-accent-soft: #faecd9;
+  --color-bg:          #fdf8f3;
   --color-surface:     #ffffff;
-  --color-surface-2:   #fffbeb;
-  --color-border:      #fde68a;
-  --color-text-primary:   #451a03;
+  --color-surface-2:   #fbf1e5;
+  --color-border:      #f1d0aa;
+  --color-text-primary:   #5a2d12;
   --color-text-secondary: #78716c;
-  --color-sidebar-bg:   #451a03;
-  --color-sidebar-text: #fde68a;
-  --color-sidebar-active: #f59e0b;
+  --color-sidebar-bg:   #5a2d12;
+  --color-sidebar-text: #f5d8b4;
+  --color-sidebar-active: #d9773f;
   --color-grade-fail:     #fee2e2;
   --color-grade-ok:       #f0fdf4;
   --color-grade-ok-text:  #047857;
   --color-grade-fail-text:#b91c1c;
-  --color-row-alt:     #fffbeb;
-  --color-row-hover:   #fef3c7;
-  --shadow-sm: 0 1px 3px rgba(245, 158, 11, 0.1);
-  --shadow-md: 0 4px 12px rgba(245, 158, 11, 0.18);
+  --color-row-alt:     #fbf1e5;
+  --color-row-hover:   #faecd9;
+  --shadow-sm: 0 1px 3px rgba(191, 90, 47, 0.1);
+  --shadow-md: 0 4px 12px rgba(191, 90, 47, 0.18);
   --badge-academic-bg:  #dbeafe; --badge-academic-text:  #1e40af;
   --badge-conduct-bg:   #ffedd5; --badge-conduct-text:   #9a3412;
   --badge-positive-bg:  #dcfce7; --badge-positive-text:  #166534;
