@@ -155,10 +155,10 @@ export function TutorialProvider({ children }) {
         localStorage.setItem(SEEN_FULL, 'true');
         localStorage.setItem(SEEN_DASHBOARD, 'true');
         localStorage.setItem(SEEN_COURSE, 'true');
-      } else {
-        const isDashboard = cur === DASHBOARD_STEPS
-          || cur?.[0]?.target === DASHBOARD_STEPS[0]?.target;
-        localStorage.setItem(isDashboard ? SEEN_DASHBOARD : SEEN_COURSE, 'true');
+      } else if (cur === DASHBOARD_STEPS) {
+        localStorage.setItem(SEEN_DASHBOARD, 'true');
+      } else if (cur === COURSE_DETAIL_STEPS) {
+        localStorage.setItem(SEEN_COURSE, 'true');
       }
       currentStepsRef.current = null;
       return;
