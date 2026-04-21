@@ -41,13 +41,10 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
     const payload = {
       ...form,
       weight,
-      groupName: '',
-      groupWeight: null
+      ...(editing && evaluation?.groupName
+        ? { groupName: evaluation.groupName, groupWeight: evaluation.groupWeight ?? null }
+        : { groupName: '', groupWeight: null })
     };
-    if (editing && evaluation?.groupName) {
-      payload.groupName = evaluation.groupName;
-      payload.groupWeight = evaluation.groupWeight ?? null;
-    }
     setSingleLoading(true);
     try {
       if (editing) {
