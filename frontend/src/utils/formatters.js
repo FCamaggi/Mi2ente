@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+/** Handle date-only strings without timezone day-shift on display. */
 function parseDisplayDate(date) {
   if (typeof date !== 'string') return date;
   const dateOnlyMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})/);

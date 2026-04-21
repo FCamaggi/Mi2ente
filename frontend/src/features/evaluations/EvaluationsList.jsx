@@ -8,6 +8,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { EvaluationsListMobile } from './EvaluationsList.mobile';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
+const UNGROUPED_KEY = '__ungrouped__';
+
 export function EvaluationsList({ courseId, evaluations, totalWeight, weightValid, onUpdate }) {
   const [editingEval, setEditingEval] = useState(null);
   const [deletingEval, setDeletingEval] = useState(null);
@@ -20,7 +22,7 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
     evaluations.forEach((evaluation) => {
       const key = evaluation.groupName
         ? `${evaluation.groupName}::${evaluation.groupWeight ?? ''}`
-        : '__ungrouped__';
+        : UNGROUPED_KEY;
       if (!map.has(key)) {
         map.set(key, {
           id: key,
