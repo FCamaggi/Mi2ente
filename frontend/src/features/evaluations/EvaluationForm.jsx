@@ -38,14 +38,16 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
     if (Number.isNaN(weight) || weight < 0 || weight > 100) {
       toast.error('La ponderación debe estar entre 0 y 100'); return;
     }
-    const payload = editing
-      ? {
-        ...form,
-        weight,
-        groupName: evaluation?.groupName || '',
-        groupWeight: evaluation?.groupName ? (evaluation?.groupWeight ?? null) : null
-      }
-      : { ...form, weight, groupName: '', groupWeight: null };
+    const payload = {
+      ...form,
+      weight,
+      groupName: '',
+      groupWeight: null
+    };
+    if (editing && evaluation?.groupName) {
+      payload.groupName = evaluation.groupName;
+      payload.groupWeight = evaluation.groupWeight ?? null;
+    }
     setSingleLoading(true);
     try {
       if (editing) {
