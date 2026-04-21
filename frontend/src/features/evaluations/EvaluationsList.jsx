@@ -18,7 +18,9 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
     const map = new Map();
 
     evaluations.forEach((evaluation) => {
-      const key = evaluation.groupName || `__single__${evaluation._id || evaluation.id}`;
+      const key = evaluation.groupName
+        ? `${evaluation.groupName}::${evaluation.groupWeight ?? ''}`
+        : '__ungrouped__';
       if (!map.has(key)) {
         map.set(key, {
           id: key,
