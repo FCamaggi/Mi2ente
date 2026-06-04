@@ -95,6 +95,8 @@ async function getOne(req, res, next) {
       return {
         evaluationId: ev._id,
         evaluationName: ev.name,
+        type: ev.type,
+        date: ev.date,
         weight: ev.weight,
         effectiveWeight: getEffectiveWeight(ev),
         groupName: ev.groupName || '',

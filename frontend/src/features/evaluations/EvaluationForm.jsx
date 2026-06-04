@@ -13,11 +13,16 @@ const EVAL_TYPES = [
   { value: 'otro',         label: 'Otro' },
 ];
 
-const emptyGroupRow = () => ({ name: '', type: 'prueba', weight: '', fixed: false });
+const emptyGroupRow = () => ({ name: '', type: 'prueba', weight: '', fixed: false, date: '', description: '' });
 
-export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
+export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose, onSave }) {
   const editing = Boolean(evaluation);
-  const [mode, setMode] = useState('single');
+  const groupEditing = Boolean(evaluation?.groupName);
+  const groupMembers = useMemo(() => {
+    if (!groupEditing) return [];
+    return evaluations.filter((item) => item.groupName === evaluation.groupName);
+  }, [evaluation, evaluations, groupEditing]);
+  const [mode, setMode] = useState(groupEditing ? 'group' : 'single');
 
   // ── Single form ──────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -57,10 +62,22 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
   };
 
   // ── Group form ───────────────────────────────────────────────────────────
-  const [groupName, setGroupName]     = useState('');
-  const [groupWeight, setGroupWeight] = useState('');
-  const [weightMode, setWeightMode]   = useState('equitativo');
-  const [rows, setRows] = useState([emptyGroupRow(), emptyGroupRow(), emptyGroupRow()]);
+  const [groupName, setGroupName] = useState(evaluation?.groupName || '');
+  const [groupWeight, setGroupWeight] = useState(evaluation?.groupWeight ?? '');
+  const [weightMode, setWeightMode] = useState(groupEditing ? 'personalizado' : 'equitativo');
+  const [rows, setRows] = useState(() => (
+    groupEditing && groupMembers.length > 0
+      ? groupMembers.map((item) => ({
+        _id: item._id || item.id,
+        name: item.name || '',
+        type: item.type || 'prueba',
+        weight: item.weight ?? '',
+        fixed: true,
+        date: item.date ? item.date.split('T')[0] : '',
+        description: item.description || ''
+      }))
+      : [emptyGroupRow(), emptyGroupRow(), emptyGroupRow()]
+  ));
   const [groupLoading, setGroupLoading] = useState(false);
 
   // Effective weight per row based on mode and fixed flags
@@ -107,25 +124,39 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
     }
     const validIndices = rows.reduce((acc, r, i) => r.name.trim() ? [...acc, i] : acc, []);
     if (validIndices.length === 0) { toast.error('Agrega al menos una evaluación al grupo'); return; }
-    if (Math.abs(weightSum - 100) > 0.5) {
-      toast.error(`La suma de pesos dentro del grupo es ${weightSum.toFixed(1)}% (debe ser 100%)`); return;
+    const activeWeights = weightMode === 'equitativo'
+      ? validIndices.map(() => 100 / validIndices.length)
+      : validIndices.map((idx) => computedWeights[idx]);
+    const activeWeightSum = activeWeights.reduce((sum, weight) => sum + weight, 0);
+    if (Math.abs(activeWeightSum - 100) > 0.5) {
+      toast.error(`La suma de pesos dentro del grupo es ${activeWeightSum.toFixed(1)}% (debe ser 100%)`); return;
     }
 
     setGroupLoading(true);
     try {
-      await Promise.all(
-        validIndices.map((origIdx, order) => evaluationsApi.create(courseId, {
-          name:        rows[origIdx].name.trim(),
-          type:        rows[origIdx].type,
-          weight:      parseFloat(computedWeights[origIdx].toFixed(2)),
-          groupName:   groupName.trim(),
+      const items = validIndices.map((origIdx, activeIdx) => ({
+        _id: rows[origIdx]._id,
+        name: rows[origIdx].name.trim(),
+        type: rows[origIdx].type,
+        weight: parseFloat(activeWeights[activeIdx].toFixed(2)),
+        groupName: groupName.trim(),
+        groupWeight: gw,
+        date: rows[origIdx].date || '',
+        description: rows[origIdx].description || '',
+      }));
+
+      if (groupEditing) {
+        await evaluationsApi.updateGroup(courseId, {
+          groupNameOriginal: evaluation.groupName,
+          groupName: groupName.trim(),
           groupWeight: gw,
-          date:        '',
-          description: '',
-          order,
-        }))
-      );
-      toast.success(`Grupo "${groupName}" creado con ${validIndices.length} evaluaciones`);
+          items
+        });
+        toast.success(`Grupo "${groupName}" actualizado`);
+      } else {
+        await Promise.all(items.map((item, order) => evaluationsApi.create(courseId, { ...item, order })));
+        toast.success(`Grupo "${groupName}" creado con ${validIndices.length} evaluaciones`);
+      }
       onSave?.();
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Error al guardar');
@@ -358,7 +389,7 @@ export function EvaluationForm({ courseId, evaluation, onClose, onSave }) {
           <div className="flex gap-3 justify-end mt-2">
             <Button variant="secondary" type="button" onClick={onClose}>Cancelar</Button>
             <Button type="submit" loading={groupLoading}>
-              Crear grupo ({rows.filter(r => r.name.trim()).length} evaluaciones)
+              {groupEditing ? 'Guardar grupo' : `Crear grupo (${rows.filter(r => r.name.trim()).length} evaluaciones)`}
             </Button>
           </div>
         </form>

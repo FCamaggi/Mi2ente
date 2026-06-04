@@ -1,6 +1,7 @@
 const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
 const Course = require('../models/Course');
+const mongoose = require('mongoose');
 const { decorateEvaluation, getEvaluationGroupTotals } = require('../utils/evaluationWeights');
 
 async function verifyCourse(courseId, userId) {
@@ -14,6 +15,21 @@ function normalizePayload(body) {
     groupName,
     groupWeight: groupName ? Number(body.groupWeight) : null,
     weight: Number(body.weight)
+  };
+}
+
+function normalizeGroupItem(item) {
+  const name = item.name?.trim?.() || '';
+  const groupName = item.groupName?.trim?.() || '';
+  return {
+    _id: item._id || item.id,
+    name,
+    type: item.type || 'prueba',
+    weight: Number(item.weight),
+    groupName,
+    groupWeight: groupName ? Number(item.groupWeight) : null,
+    date: item.date || null,
+    description: item.description?.trim?.() || ''
   };
 }
 
@@ -72,6 +88,110 @@ async function update(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function updateGroup(req, res, next) {
+  const session = await mongoose.startSession();
+
+  try {
+    const { courseId } = req.params;
+    const course = await verifyCourse(courseId, req.userId);
+    if (!course) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Acceso denegado' } });
+    }
+
+    const originalName = req.body.groupNameOriginal?.trim?.() || '';
+    const groupName = req.body.groupName?.trim?.() || '';
+    const groupWeight = Number(req.body.groupWeight);
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+
+    if (!originalName || !groupName) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'El nombre del grupo es requerido' } });
+    }
+    if (Number.isNaN(groupWeight) || groupWeight < 0 || groupWeight > 100) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'La ponderación del grupo debe estar entre 0 y 100' } });
+    }
+    if (items.length === 0) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'El grupo debe tener al menos una evaluación' } });
+    }
+
+    const normalizedItems = items.map((item) => normalizeGroupItem({ ...item, groupName, groupWeight }));
+    const invalidItem = normalizedItems.find((item) =>
+      !item.name || Number.isNaN(item.weight) || item.weight < 0 || item.weight > 100
+    );
+    if (invalidItem) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Cada evaluación debe tener nombre y ponderación válida' } });
+    }
+
+    let decorated = [];
+
+    await session.withTransaction(async () => {
+      const existing = await Evaluation.find({ courseId, userId: req.userId, groupName: originalName }).session(session);
+      const existingIds = new Set(existing.map((evaluation) => evaluation._id.toString()));
+      const payloadIds = new Set(normalizedItems.filter((item) => item._id).map((item) => item._id.toString()));
+      const omitted = existing.filter((evaluation) => !payloadIds.has(evaluation._id.toString()));
+
+      if (omitted.length > 0) {
+        const omittedIds = omitted.map((evaluation) => evaluation._id);
+        const gradeCount = await Grade.countDocuments({ courseId, evaluationId: { $in: omittedIds } }).session(session);
+        if (gradeCount > 0) {
+          const err = new Error('No se puede quitar una evaluación del grupo porque tiene notas asociadas');
+          err.status = 409;
+          err.code = 'GROUP_EVALUATION_HAS_GRADES';
+          throw err;
+        }
+        await Evaluation.deleteMany({ _id: { $in: omittedIds }, courseId }).session(session);
+      }
+
+      const saved = [];
+      for (let index = 0; index < normalizedItems.length; index += 1) {
+        const item = normalizedItems[index];
+        const payload = {
+          name: item.name,
+          type: item.type,
+          weight: item.weight,
+          groupName,
+          groupWeight,
+          date: item.date,
+          description: item.description,
+          order: index
+        };
+
+        if (item._id) {
+          if (!existingIds.has(item._id.toString())) {
+            const err = new Error('Una evaluación no pertenece al grupo original');
+            err.status = 400;
+            err.code = 'VALIDATION_ERROR';
+            throw err;
+          }
+          const updated = await Evaluation.findOneAndUpdate(
+            { _id: item._id, courseId, userId: req.userId },
+            payload,
+            { new: true, runValidators: true, session }
+          );
+          if (updated) saved.push(updated);
+        } else {
+          const created = await Evaluation.create([{
+            ...payload,
+            courseId,
+            userId: req.userId
+          }], { session });
+          saved.push(created[0]);
+        }
+      }
+
+      decorated = saved.map(decorateEvaluation);
+    });
+
+    res.json({ success: true, data: { evaluations: decorated } });
+  } catch (err) {
+    if (err.status === 409 || err.code === 'GROUP_EVALUATION_HAS_GRADES') {
+      return res.status(409).json({ success: false, error: { code: 'GROUP_EVALUATION_HAS_GRADES', message: err.message } });
+    }
+    next(err);
+  } finally {
+    session.endSession();
+  }
+}
+
 async function reorder(req, res, next) {
   try {
     const { courseId } = req.params;
@@ -98,4 +218,4 @@ async function remove(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { list, create, update, reorder, remove };
+module.exports = { list, create, update, updateGroup, reorder, remove };

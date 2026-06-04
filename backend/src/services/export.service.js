@@ -2,13 +2,40 @@ const ExcelJS = require('exceljs');
 const Student = require('../models/Student');
 const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
+const Observation = require('../models/Observation');
 const { weightedAverage, getSituacion } = require('../utils/gradeCalculator');
 const { getEffectiveWeight } = require('../utils/evaluationWeights');
 
-async function toExcel(courseId, course) {
+function buildEvaluationFilter(courseId, options = {}) {
+  const filter = { courseId };
+  const ids = Array.isArray(options.evaluationIds)
+    ? options.evaluationIds
+    : String(options.evaluationIds || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+  if (ids.length > 0) filter._id = { $in: ids };
+
+  const dateFilter = {};
+  if (options.from) dateFilter.$gte = new Date(`${options.from}T00:00:00.000Z`);
+  if (options.to) dateFilter.$lte = new Date(`${options.to}T23:59:59.999Z`);
+  if (Object.keys(dateFilter).length > 0) filter.date = dateFilter;
+
+  return filter;
+}
+
+function formatGradeCell(grade) {
+  if (!grade || grade.status === 'pending') return '';
+  if (grade.status === 'absent') return 'Ausente';
+  if (grade.status === 'exempt') return 'Exento';
+  return grade.value;
+}
+
+async function toExcel(courseId, course, options = {}) {
   const [students, evaluations, grades] = await Promise.all([
     Student.find({ courseId, status: 'active' }).sort({ listNumber: 1 }),
-    Evaluation.find({ courseId }).sort({ order: 1 }),
+    Evaluation.find(buildEvaluationFilter(courseId, options)).sort({ order: 1 }),
     Grade.find({ courseId })
   ]);
 
@@ -28,10 +55,7 @@ async function toExcel(courseId, course) {
     const studentGrades = grades.filter((grade) => grade.studentId.toString() === student._id.toString());
     const gradeValues = evaluations.map((evaluation) => {
       const grade = studentGrades.find((item) => item.evaluationId.toString() === evaluation._id.toString());
-      if (!grade || grade.status === 'pending') return '';
-      if (grade.status === 'absent') return 'Ausente';
-      if (grade.status === 'exempt') return 'Exento';
-      return grade.value;
+      return formatGradeCell(grade);
     });
     const avg = weightedAverage(studentGrades, evaluations, decimals);
     const sit = getSituacion(avg, passGrade);
@@ -46,4 +70,60 @@ async function toExcel(courseId, course) {
   return workbook.xlsx.writeBuffer();
 }
 
-module.exports = { toExcel };
+async function studentToExcel(courseId, course, studentId, options = {}) {
+  const [student, evaluations, grades, observations] = await Promise.all([
+    Student.findOne({ _id: studentId, courseId }),
+    Evaluation.find(buildEvaluationFilter(courseId, options)).sort({ order: 1 }),
+    Grade.find({ courseId, studentId }),
+    Observation.find({ courseId, studentId }).sort({ date: -1 })
+  ]);
+
+  if (!student) {
+    const err = new Error('Alumno no encontrado');
+    err.status = 404;
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+
+  const { passGrade, decimals } = course.gradeConfig;
+  const avg = weightedAverage(grades, evaluations, decimals);
+  const sit = getSituacion(avg, passGrade);
+
+  const workbook = new ExcelJS.Workbook();
+  const summary = workbook.addWorksheet('Resumen');
+  summary.addRow(['Curso', course.name]);
+  summary.addRow(['Alumno', `${student.lastName} ${student.firstName}`]);
+  summary.addRow(['N° lista', student.listNumber]);
+  summary.addRow(['Promedio', avg ?? '']);
+  summary.addRow(['Situación', sit === 'aprobado' ? 'Aprobado/a' : sit === 'reprobado' ? 'Reprobado/a' : 'Sin notas']);
+  summary.getColumn(1).font = { bold: true };
+
+  const gradesSheet = workbook.addWorksheet('Notas');
+  gradesSheet.addRow(['Evaluación', 'Tipo', 'Grupo', 'Ponderación efectiva', 'Nota']);
+  gradesSheet.getRow(1).font = { bold: true };
+  evaluations.forEach((evaluation) => {
+    const grade = grades.find((item) => item.evaluationId.toString() === evaluation._id.toString());
+    gradesSheet.addRow([
+      evaluation.name,
+      evaluation.type,
+      evaluation.groupName || '',
+      getEffectiveWeight(evaluation),
+      formatGradeCell(grade)
+    ]);
+  });
+
+  const observationsSheet = workbook.addWorksheet('Observaciones');
+  observationsSheet.addRow(['Fecha', 'Categoría', 'Observación']);
+  observationsSheet.getRow(1).font = { bold: true };
+  observations.forEach((observation) => {
+    observationsSheet.addRow([
+      observation.date ? observation.date.toISOString().slice(0, 10) : '',
+      observation.category,
+      observation.text
+    ]);
+  });
+
+  return workbook.xlsx.writeBuffer();
+}
+
+module.exports = { toExcel, studentToExcel };

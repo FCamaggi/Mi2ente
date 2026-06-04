@@ -65,12 +65,12 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
           onDelete={setDeletingEval}
         />
         {editingEval && (
-          <EvaluationForm courseId={courseId} evaluation={editingEval} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
+          <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
         )}
         <ConfirmDialog
           isOpen={Boolean(deletingEval)}
           title="Eliminar evaluación"
-          message={deletingEval ? `¿Eliminar "${deletingEval.name}"? Se borrarán sus notas.` : ''}
+          message={deletingEval ? `¿Eliminar "${deletingEval.name}" de forma permanente? Esta acción explícita borrará sus notas asociadas.` : ''}
           confirmLabel="Eliminar"
           loading={loadingDelete}
           onClose={() => setDeletingEval(null)}
@@ -148,13 +148,13 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
       </div>
 
       {editingEval && (
-        <EvaluationForm courseId={courseId} evaluation={editingEval} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
+        <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
       )}
 
       <ConfirmDialog
         isOpen={Boolean(deletingEval)}
         title="Eliminar evaluación"
-        message={deletingEval ? `¿Eliminar "${deletingEval.name}"? Se borrarán sus notas.` : ''}
+        message={deletingEval ? `¿Eliminar "${deletingEval.name}" de forma permanente? Esta acción explícita borrará sus notas asociadas.` : ''}
         confirmLabel="Eliminar"
         loading={loadingDelete}
         onClose={() => setDeletingEval(null)}

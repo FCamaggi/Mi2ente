@@ -8,6 +8,7 @@ import { ResetPasswordPage } from './features/auth/ResetPasswordPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { CoursesPage } from './features/courses/CoursesPage';
 import { CourseDetailPage } from './features/courses/CourseDetailPage';
+import { ReportsPage } from './features/reports/ReportsPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { PageLoader } from './components/ui/LoadingSpinner';
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

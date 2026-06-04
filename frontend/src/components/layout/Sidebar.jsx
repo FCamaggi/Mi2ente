@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, Settings, LogOut, X, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, BookOpen, FileText, User, Settings, LogOut, X, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth.api';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -9,6 +9,7 @@ import { useTutorial } from '../tutorial/TutorialProvider';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/courses', label: 'Mis Cursos', icon: BookOpen },
+  { to: '/reports', label: 'Reportes', icon: FileText },
   { to: '/profile', label: 'Perfil', icon: User },
   { to: '/settings', label: 'Configuración', icon: Settings },
 ];
