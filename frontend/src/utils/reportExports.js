@@ -10,6 +10,7 @@ export function filterEvaluations(evaluations, filters = {}) {
   return evaluations.filter((evaluation) => {
     const id = getId(evaluation);
     if (ids.size > 0 && !ids.has(id)) return false;
+    if (filters.periodId && String(evaluation.periodId) !== String(filters.periodId)) return false;
     if (!filters.from && !filters.to) return true;
     if (!evaluation.date) return false;
     const date = evaluation.date.slice(0, 10);
@@ -40,6 +41,25 @@ export function buildCoursePdf({ course, students, evaluations, grades, filters 
   doc.text(course?.name || 'Libro de notas', 14, 16);
   doc.setFontSize(10);
   doc.text([course?.subject, course?.level, course?.academicYear].filter(Boolean).join(' - '), 14, 22);
+
+  if (filters.scope === 'annual') {
+    const periods = [...(course?.periods || [])].sort((a, b) => a.order - b.order);
+    autoTable(doc, {
+      startY: 28,
+      styles: { fontSize: 8 },
+      head: [['N', 'Apellido', 'Nombre', ...periods.map((period) => `${period.name} (${period.weight}%)`), 'Promedio anual', 'Situación', 'Estado']],
+      body: students.map((student) => [
+        student.listNumber,
+        student.lastName,
+        student.firstName,
+        ...periods.map((period) => student.periodAverages?.find((item) => String(item.periodId) === String(getId(period)))?.average ?? '-'),
+        student.annualAverage ?? '-',
+        student.annualStatus === 'aprobado' ? 'Aprobado/a' : student.annualStatus === 'reprobado' ? 'Reprobado/a' : 'Sin notas',
+        student.annualAverage == null ? 'Sin notas' : student.provisional ? 'Provisional' : 'Final'
+      ])
+    });
+    return { doc, filename: `${safeFilename(course?.name, 'curso')}_${course?.academicYear || ''}_anual.pdf` };
+  }
 
   autoTable(doc, {
     startY: 28,
@@ -106,6 +126,22 @@ export function buildStudentPdf({ course, studentReport, filters = {} }) {
   doc.text(`${student?.lastName || ''} ${student?.firstName || ''}`.trim() || 'Ficha alumno', 14, 16);
   doc.setFontSize(10);
   doc.text([course?.name, course?.academicYear].filter(Boolean).join(' - '), 14, 22);
+  if (filters.scope === 'annual') {
+    const periods = [...(course?.periods || [])].sort((a, b) => a.order - b.order);
+    autoTable(doc, {
+      startY: 30,
+      head: [['Período', 'Peso', 'Promedio']],
+      body: periods.map((period) => {
+        const item = studentReport?.periodAverages?.find((value) => String(value.periodId) === String(getId(period)));
+        return [period.name, `${period.weight}%`, item?.average ?? '-'];
+      }).concat([
+        ['Promedio anual', '', studentReport?.annualAverage ?? '-'],
+        ['Situación', '', studentReport?.annualStatus === 'aprobado' ? 'Aprobado/a' : studentReport?.annualStatus === 'reprobado' ? 'Reprobado/a' : 'Sin notas'],
+        ['Estado', '', studentReport?.provisional ? 'Provisional' : 'Final']
+      ])
+    });
+    return { doc, filename: `${safeFilename(course?.name, 'curso')}_${safeFilename(student?.lastName || student?.firstName, 'alumno')}_anual.pdf` };
+  }
   doc.text(`Promedio: ${average ?? '-'} - ${situation === 'aprobado' ? 'Aprobado/a' : situation === 'reprobado' ? 'Reprobado/a' : 'Sin notas'}`, 14, 28);
 
   autoTable(doc, {

@@ -129,6 +129,8 @@ Una **evaluación** = una prueba, tarea, trabajo, etc. pertenece a un curso.
 
 ### 3.5 🔢 Ingreso y Gestión de Notas
 
+Los cursos definen uno o más períodos académicos con nombres, orden y ponderación anual. El libro de notas muestra un período a la vez; la vista anual muestra únicamente promedios por período y promedio anual. Evaluaciones, estadísticas, fichas y reportes respetan el mismo alcance.
+
 | # | Funcionalidad | Prioridad |
 |---|---|---|
 | G1 | Vista de grilla (tabla): alumnos × evaluaciones | Alta |

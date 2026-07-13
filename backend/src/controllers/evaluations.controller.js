@@ -3,6 +3,7 @@ const Grade = require('../models/Grade');
 const Course = require('../models/Course');
 const mongoose = require('mongoose');
 const { decorateEvaluation, getEvaluationGroupTotals } = require('../utils/evaluationWeights');
+const { periodExists, sortedPeriods, evaluationsForPeriod } = require('../utils/periods');
 
 async function verifyCourse(courseId, userId) {
   return Course.findOne({ _id: courseId, userId });
@@ -12,6 +13,7 @@ function normalizePayload(body) {
   const groupName = body.groupName?.trim?.() || '';
   return {
     ...body,
+    periodId: body.periodId,
     groupName,
     groupWeight: groupName ? Number(body.groupWeight) : null,
     weight: Number(body.weight)
@@ -36,20 +38,31 @@ function normalizeGroupItem(item) {
 async function list(req, res, next) {
   try {
     const { courseId } = req.params;
-    if (!await verifyCourse(courseId, req.userId)) {
+    const course = await verifyCourse(courseId, req.userId);
+    if (!course) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Acceso denegado' } });
     }
 
     const evaluations = await Evaluation.find({ courseId }).sort({ order: 1 });
     const decorated = evaluations.map(decorateEvaluation);
-    const totalWeight = getEvaluationGroupTotals(decorated);
+    const periods = sortedPeriods(course);
+    const firstPeriodId = periods[0]?._id;
+    const totalsByPeriod = periods.map((period) => {
+      const items = evaluationsForPeriod(decorated, period._id, firstPeriodId);
+      const totalWeight = getEvaluationGroupTotals(items);
+      return { periodId: period._id, totalWeight, weightValid: Math.abs(totalWeight - 100) < 0.1 };
+    });
+    const requested = req.query.periodId
+      ? totalsByPeriod.find((item) => item.periodId.toString() === req.query.periodId)
+      : totalsByPeriod[0];
 
     res.json({
       success: true,
       data: {
         evaluations: decorated,
-        totalWeight,
-        weightValid: Math.abs(totalWeight - 100) < 0.1
+        totalWeight: requested?.totalWeight ?? 0,
+        weightValid: requested?.weightValid ?? false,
+        totalsByPeriod
       }
     });
   } catch (err) { next(err); }
@@ -58,10 +71,14 @@ async function list(req, res, next) {
 async function create(req, res, next) {
   try {
     const { courseId } = req.params;
-    if (!await verifyCourse(courseId, req.userId)) {
+    const course = await verifyCourse(courseId, req.userId);
+    if (!course) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Acceso denegado' } });
     }
-    const count = await Evaluation.countDocuments({ courseId });
+    if (!periodExists(course, req.body.periodId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PERIOD', message: 'El período no pertenece al curso' } });
+    }
+    const count = await Evaluation.countDocuments({ courseId, periodId: req.body.periodId });
     const evaluation = await Evaluation.create({
       ...normalizePayload(req.body),
       courseId,
@@ -75,15 +92,26 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const { courseId, evalId } = req.params;
-    if (!await verifyCourse(courseId, req.userId)) {
+    const course = await verifyCourse(courseId, req.userId);
+    if (!course) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Acceso denegado' } });
     }
+    if (!periodExists(course, req.body.periodId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PERIOD', message: 'El período no pertenece al curso' } });
+    }
+    const existingEvaluation = await Evaluation.findOne({ _id: evalId, courseId });
     const evaluation = await Evaluation.findOneAndUpdate(
       { _id: evalId, courseId },
       normalizePayload(req.body),
       { new: true, runValidators: true }
     );
     if (!evaluation) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Evaluación no encontrada' } });
+    if (existingEvaluation?.groupName && existingEvaluation.periodId?.toString() !== req.body.periodId?.toString()) {
+      await Evaluation.updateMany(
+        { courseId, periodId: existingEvaluation.periodId, groupName: existingEvaluation.groupName },
+        { periodId: req.body.periodId }
+      );
+    }
     res.json({ success: true, data: { evaluation: decorateEvaluation(evaluation) } });
   } catch (err) { next(err); }
 }
@@ -101,10 +129,14 @@ async function updateGroup(req, res, next) {
     const originalName = req.body.groupNameOriginal?.trim?.() || '';
     const groupName = req.body.groupName?.trim?.() || '';
     const groupWeight = Number(req.body.groupWeight);
+    const periodId = req.body.periodId;
     const items = Array.isArray(req.body.items) ? req.body.items : [];
 
     if (!originalName || !groupName) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'El nombre del grupo es requerido' } });
+    }
+    if (!periodExists(course, periodId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PERIOD', message: 'El período no pertenece al curso' } });
     }
     if (Number.isNaN(groupWeight) || groupWeight < 0 || groupWeight > 100) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'La ponderación del grupo debe estar entre 0 y 100' } });
@@ -124,7 +156,8 @@ async function updateGroup(req, res, next) {
     let decorated = [];
 
     await session.withTransaction(async () => {
-      const existing = await Evaluation.find({ courseId, userId: req.userId, groupName: originalName }).session(session);
+      const originalPeriodId = req.body.periodIdOriginal || periodId;
+      const existing = await Evaluation.find({ courseId, userId: req.userId, periodId: originalPeriodId, groupName: originalName }).session(session);
       const existingIds = new Set(existing.map((evaluation) => evaluation._id.toString()));
       const payloadIds = new Set(normalizedItems.filter((item) => item._id).map((item) => item._id.toString()));
       const omitted = existing.filter((evaluation) => !payloadIds.has(evaluation._id.toString()));
@@ -150,6 +183,7 @@ async function updateGroup(req, res, next) {
           weight: item.weight,
           groupName,
           groupWeight,
+          periodId,
           date: item.date,
           description: item.description,
           order: index

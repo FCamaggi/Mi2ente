@@ -4,6 +4,17 @@ const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
 const Observation = require('../models/Observation');
 const statsService = require('../services/stats.service');
+const { defaultPeriods, sortedPeriods } = require('../utils/periods');
+const mongoose = require('mongoose');
+
+function normalizePeriods(periods) {
+  return periods.map((period, index) => ({
+    ...period,
+    name: period.name.trim(),
+    weight: Number(period.weight),
+    order: index
+  }));
+}
 
 async function list(req, res, next) {
   try {
@@ -19,7 +30,7 @@ async function list(req, res, next) {
         Student.countDocuments({ courseId: c._id, status: 'active' }),
         Evaluation.countDocuments({ courseId: c._id })
       ]);
-      const stats = await statsService.getCourseStats(c._id, c.gradeConfig);
+      const stats = await statsService.getCourseStats(c._id, c.gradeConfig, c);
       return { ...c.toObject(), id: c._id, studentCount, evaluationCount, stats };
     }));
 
@@ -31,6 +42,7 @@ async function create(req, res, next) {
   try {
     const body = { ...req.body, userId: req.userId };
     if (!body.schoolId) body.schoolId = null;
+    body.periods = normalizePeriods(body.periods?.length ? body.periods : defaultPeriods());
     const course = await Course.create(body);
     res.status(201).json({ success: true, data: { course } });
   } catch (err) { next(err); }
@@ -40,7 +52,7 @@ async function getOne(req, res, next) {
   try {
     const course = await Course.findOne({ _id: req.params.courseId, userId: req.userId });
     if (!course) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Curso no encontrado' } });
-    const stats = await statsService.getCourseStats(course._id, course.gradeConfig);
+    const stats = await statsService.getCourseStats(course._id, course.gradeConfig, course);
     res.json({ success: true, data: { course, stats } });
   } catch (err) { next(err); }
 }
@@ -49,6 +61,16 @@ async function update(req, res, next) {
   try {
     const body = { ...req.body };
     if ('schoolId' in body && !body.schoolId) body.schoolId = null;
+    if (body.periods) {
+      const current = await Course.findOne({ _id: req.params.courseId, userId: req.userId });
+      if (!current) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Curso no encontrado' } });
+      const nextIds = new Set(body.periods.filter((period) => period._id).map((period) => period._id.toString()));
+      const removedIds = sortedPeriods(current).filter((period) => !nextIds.has(period._id.toString())).map((period) => period._id);
+      if (removedIds.length > 0 && await Evaluation.exists({ courseId: current._id, periodId: { $in: removedIds } })) {
+        return res.status(409).json({ success: false, error: { code: 'PERIOD_HAS_EVALUATIONS', message: 'Reasigna las evaluaciones antes de eliminar el período' } });
+      }
+      body.periods = normalizePeriods(body.periods);
+    }
     const course = await Course.findOneAndUpdate(
       { _id: req.params.courseId, userId: req.userId },
       body,
@@ -94,6 +116,14 @@ async function duplicate(req, res, next) {
     data.name = name || `${data.name} (copia)`;
     if (academicYear) data.academicYear = academicYear;
 
+    const originalPeriods = sortedPeriods(original).length ? sortedPeriods(original) : defaultPeriods();
+    const periodIdMap = new Map();
+    data.periods = originalPeriods.map((period, index) => {
+      const nextId = new mongoose.Types.ObjectId();
+      periodIdMap.set(period._id.toString(), nextId);
+      return { _id: nextId, name: period.name, weight: period.weight, order: index };
+    });
+
     const newCourse = await Course.create(data);
 
     // Copy evaluations (without grades)
@@ -103,6 +133,7 @@ async function duplicate(req, res, next) {
         const ed = e.toObject();
         delete ed._id; delete ed.createdAt; delete ed.updatedAt; delete ed.__v;
         ed.courseId = newCourse._id;
+        ed.periodId = (e.periodId && periodIdMap.get(e.periodId.toString())) || newCourse.periods[0]._id;
         return ed;
       });
       await Evaluation.insertMany(newEvals);
@@ -128,7 +159,10 @@ async function getStats(req, res, next) {
   try {
     const course = await Course.findOne({ _id: req.params.courseId, userId: req.userId });
     if (!course) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Curso no encontrado' } });
-    const stats = await statsService.getDetailedStats(course._id, course.gradeConfig);
+    if (req.query.periodId && !sortedPeriods(course).some((period) => period._id.toString() === req.query.periodId)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PERIOD', message: 'El período no pertenece al curso' } });
+    }
+    const stats = await statsService.getDetailedStats(course._id, course.gradeConfig, course, req.query);
     res.json({ success: true, data: stats });
   } catch (err) { next(err); }
 }

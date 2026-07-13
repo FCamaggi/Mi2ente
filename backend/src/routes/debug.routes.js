@@ -184,7 +184,11 @@ router.post('/seed', verifyToken, async (req, res) => {
           description: `${SEED_TAG} Curso de demostración generado automáticamente.`,
           color: cfg.color,
           status: 'active',
-          gradeConfig: { minGrade: 1.0, maxGrade: 7.0, passGrade: 4.0, decimals: 1 }
+          gradeConfig: { minGrade: 1.0, maxGrade: 7.0, passGrade: 4.0, decimals: 1 },
+          periods: [
+            { name: 'Semestre 1', weight: 50, order: 0 },
+            { name: 'Semestre 2', weight: 50, order: 1 }
+          ]
         }], { session });
         summary.courses++;
 
@@ -192,6 +196,7 @@ router.post('/seed', verifyToken, async (req, res) => {
         const evalDocs = await Evaluation.create(
           cfg.evaluations.map(e => ({
             courseId: course._id,
+            periodId: course.periods[0]._id,
             userId,
             name:        e.name,
             type:        e.type,

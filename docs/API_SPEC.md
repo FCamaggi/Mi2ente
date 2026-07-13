@@ -637,3 +637,13 @@ Exportar libro de notas en PDF. **Protegido.**
   }
 }
 ```
+---
+
+## Períodos académicos
+
+- `Course.periods`: arreglo `{ _id, name, weight, order }`, obligatorio y con peso total 100%.
+- `Evaluation.periodId`: identificador obligatorio de un período del curso.
+- `GET /courses/:courseId/stats?periodId=...`: estadísticas de un período; sin `periodId`, resumen anual.
+- `GET /courses/:courseId/export/excel?periodId=...`: libro detallado del período.
+- `GET /courses/:courseId/export/excel?scope=annual`: resumen de promedios por período.
+- Las respuestas de alumnos incluyen `periodAverages`, `annualAverage`, `annualStatus` y `provisional`.

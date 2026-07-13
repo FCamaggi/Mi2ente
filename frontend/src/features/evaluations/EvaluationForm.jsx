@@ -15,18 +15,19 @@ const EVAL_TYPES = [
 
 const emptyGroupRow = () => ({ name: '', type: 'prueba', weight: '', fixed: false, date: '', description: '' });
 
-export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose, onSave }) {
+export function EvaluationForm({ courseId, evaluation, evaluations = [], periods = [], selectedPeriodId, onClose, onSave }) {
   const editing = Boolean(evaluation);
   const groupEditing = Boolean(evaluation?.groupName);
   const groupMembers = useMemo(() => {
     if (!groupEditing) return [];
-    return evaluations.filter((item) => item.groupName === evaluation.groupName);
+    return evaluations.filter((item) => item.groupName === evaluation.groupName && String(item.periodId) === String(evaluation.periodId));
   }, [evaluation, evaluations, groupEditing]);
   const [mode, setMode] = useState(groupEditing ? 'group' : 'single');
 
   // ── Single form ──────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     name:        evaluation?.name        || '',
+    periodId:    evaluation?.periodId || selectedPeriodId || periods[0]?._id || '',
     type:        evaluation?.type        || 'prueba',
     weight:      evaluation?.weight      ?? '',
     date:        evaluation?.date ? evaluation.date.split('T')[0] : '',
@@ -39,6 +40,7 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
   const handleSubmitSingle = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.error('El nombre es requerido'); return; }
+    if (!form.periodId) { toast.error('Selecciona un período'); return; }
     const weight = parseFloat(form.weight);
     if (Number.isNaN(weight) || weight < 0 || weight > 100) {
       toast.error('La ponderación debe estar entre 0 y 100'); return;
@@ -69,6 +71,7 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
 
   // ── Group form ───────────────────────────────────────────────────────────
   const [groupName, setGroupName] = useState(evaluation?.groupName || '');
+  const [groupPeriodId, setGroupPeriodId] = useState(evaluation?.periodId || selectedPeriodId || periods[0]?._id || '');
   const [groupWeight, setGroupWeight] = useState(evaluation?.groupWeight ?? '');
   const [weightMode, setWeightMode] = useState(groupEditing ? 'personalizado' : 'equitativo');
   const [rows, setRows] = useState(() => (
@@ -125,6 +128,7 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
   const handleSubmitGroup = async (e) => {
     e.preventDefault();
     if (!groupName.trim()) { toast.error('El nombre del grupo es requerido'); return; }
+    if (!groupPeriodId) { toast.error('Selecciona un período'); return; }
     if (!groupWeight || gw < 0 || gw > 100) {
       toast.error('La ponderación del grupo debe estar entre 0 y 100'); return;
     }
@@ -156,11 +160,13 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
           groupNameOriginal: evaluation.groupName,
           groupName: groupName.trim(),
           groupWeight: gw,
+          periodIdOriginal: evaluation.periodId,
+          periodId: groupPeriodId,
           items
         });
         toast.success(`Grupo "${groupName}" actualizado`);
       } else {
-        await Promise.all(items.map((item, order) => evaluationsApi.create(courseId, { ...item, order })));
+        await Promise.all(items.map((item, order) => evaluationsApi.create(courseId, { ...item, periodId: groupPeriodId, order })));
         toast.success(`Grupo "${groupName}" creado con ${validIndices.length} evaluaciones`);
       }
       onSave?.();
@@ -197,6 +203,9 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
       {/* ── Individual ── */}
       {mode === 'single' && (
         <form onSubmit={handleSubmitSingle} className="flex flex-col gap-4">
+          <Select label="Período *" value={form.periodId} onChange={set('periodId')} required>
+            {periods.map((period) => <option key={period._id || period.id} value={period._id || period.id}>{period.name}</option>)}
+          </Select>
           <Input label="Nombre *" value={form.name} onChange={set('name')} required placeholder="Ej: Prueba 1 — Fracciones" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select label="Tipo" value={form.type} onChange={set('type')}>
@@ -219,6 +228,9 @@ export function EvaluationForm({ courseId, evaluation, evaluations = [], onClose
       {/* ── Group ── */}
       {mode === 'group' && (
         <form onSubmit={handleSubmitGroup} className="flex flex-col gap-4">
+          <Select label="Período *" value={groupPeriodId} onChange={(event) => setGroupPeriodId(event.target.value)} required>
+            {periods.map((period) => <option key={period._id || period.id} value={period._id || period.id}>{period.name}</option>)}
+          </Select>
           {/* Group header */}
           <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 flex flex-col gap-3">
             <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>

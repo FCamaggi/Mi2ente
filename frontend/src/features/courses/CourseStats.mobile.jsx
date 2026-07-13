@@ -32,10 +32,10 @@ export function CourseStatsMobile({ data, passGrade }) {
   }, [data]);
 
   const lineData = useMemo(() =>
-    (data?.byEvaluation || []).map((ev) => ({
+    (data?.scope === 'annual' ? data?.byPeriod || [] : data?.byEvaluation || []).map((ev) => ({
       name: ev.name,
       shortName: truncate(ev.name, 8),
-      average: ev.average,
+      average: data?.scope === 'annual' ? ev.classAverage : ev.average,
       passGrade,
     })),
     [data, passGrade]
@@ -56,7 +56,7 @@ export function CourseStatsMobile({ data, passGrade }) {
       </div>
 
       {/* Histogram */}
-      <section
+      {data?.scope !== 'annual' && <section
         className="rounded-[var(--radius-lg)] border p-3 min-w-0"
         style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
@@ -77,7 +77,7 @@ export function CourseStatsMobile({ data, passGrade }) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </section>}
 
       {/* Line chart */}
       <section
@@ -85,7 +85,7 @@ export function CourseStatsMobile({ data, passGrade }) {
         style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <h3 className="font-semibold mb-3 text-sm" style={{ color: 'var(--color-text-primary)' }}>
-          Evolución por evaluación
+          {data?.scope === 'annual' ? 'Promedio por período' : 'Evolución por evaluación'}
         </h3>
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">

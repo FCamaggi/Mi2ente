@@ -93,3 +93,13 @@ La app está diseñada para **profesores/as de educación básica y media** chil
 
 `v1.0.0` — MVP inicial  
 Escala chilena 1.0 → 7.0 · Nota de aprobación configurable (default 4.0)
+
+## Migración de períodos académicos
+
+Después de desplegar la versión que incorpora períodos, ejecutar una vez en el backend:
+
+```bash
+npm run migrate:periods
+```
+
+El comando es idempotente: crea dos semestres 50/50 en cursos antiguos y asigna sus evaluaciones existentes al primer semestre.

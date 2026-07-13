@@ -26,10 +26,10 @@ function truncate(str, n = 12) {
 
 const axisStyle = { fill: 'var(--color-text-secondary)', fontSize: 11 };
 
-export function CourseStats({ courseId, passGrade }) {
+export function CourseStats({ courseId, periodId, passGrade }) {
   const { data, isLoading } = useQuery({
-    queryKey: ['course-stats', courseId],
-    queryFn:  () => coursesApi.getStats(courseId)
+    queryKey: ['course-stats', courseId, periodId || 'annual'],
+    queryFn:  () => coursesApi.getStats(courseId, periodId ? { periodId } : {})
   });
   const { isMobile } = useBreakpoint();
 
@@ -42,10 +42,10 @@ export function CourseStats({ courseId, passGrade }) {
   }, [data]);
 
   const lineData = useMemo(() =>
-    (data?.byEvaluation || []).map(ev => ({
+    (data?.scope === 'annual' ? data?.byPeriod || [] : data?.byEvaluation || []).map(ev => ({
       name:      ev.name,
       shortName: truncate(ev.name, 10),
-      average:   ev.average,
+      average:   data?.scope === 'annual' ? ev.classAverage : ev.average,
       passGrade,
     })),
     [data, passGrade]
@@ -75,7 +75,7 @@ export function CourseStats({ courseId, passGrade }) {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
         {/* Histogram */}
-        <section className="rounded-[var(--radius-lg)] border p-4 min-w-0" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        {data?.scope !== 'annual' && <section className="rounded-[var(--radius-lg)] border p-4 min-w-0" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <h3 className="font-semibold mb-3 text-sm sm:text-base" style={{ color: 'var(--color-text-primary)' }}>
             Distribución de notas
           </h3>
@@ -93,12 +93,12 @@ export function CourseStats({ courseId, passGrade }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </section>
+        </section>}
 
         {/* Line chart */}
         <section className="rounded-[var(--radius-lg)] border p-4 min-w-0" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <h3 className="font-semibold mb-3 text-sm sm:text-base" style={{ color: 'var(--color-text-primary)' }}>
-            Evolución por evaluación
+            {data?.scope === 'annual' ? 'Promedio por período' : 'Evolución por evaluación'}
           </h3>
           <div className="h-48 sm:h-60 lg:h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">

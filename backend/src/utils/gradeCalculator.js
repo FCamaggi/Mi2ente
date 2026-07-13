@@ -43,4 +43,16 @@ function calcStats(averages) {
   };
 }
 
-module.exports = { weightedAverage, getSituacion, calcStats };
+function calculateAnnualAverage(periodAverages, decimals = 1) {
+  const relevant = periodAverages.filter((period) => Number(period.weight || 0) > 0);
+  const available = relevant.filter((period) => period.average !== null && period.average !== undefined);
+  const availableWeight = available.reduce((sum, period) => sum + Number(period.weight || 0), 0);
+  if (availableWeight === 0) return { average: null, provisional: false };
+  const raw = available.reduce((sum, period) => sum + (period.rawAverage ?? period.average) * Number(period.weight || 0), 0) / availableWeight;
+  return {
+    average: parseFloat(raw.toFixed(decimals)),
+    provisional: available.length < relevant.length
+  };
+}
+
+module.exports = { weightedAverage, getSituacion, calcStats, calculateAnnualAverage };

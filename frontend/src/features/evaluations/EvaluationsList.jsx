@@ -10,7 +10,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 const UNGROUPED_KEY = '__ungrouped__';
 
-export function EvaluationsList({ courseId, evaluations, totalWeight, weightValid, onUpdate }) {
+export function EvaluationsList({ courseId, evaluations, totalWeight, weightValid, periods = [], selectedPeriodId, onUpdate }) {
   const [editingEval, setEditingEval] = useState(null);
   const [deletingEval, setDeletingEval] = useState(null);
   const [loadingDelete, setLoadingDelete] = useState(false);
@@ -69,7 +69,7 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
           onDelete={setDeletingEval}
         />
         {editingEval && (
-          <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
+          <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} periods={periods} selectedPeriodId={selectedPeriodId} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
         )}
         <ConfirmDialog
           isOpen={Boolean(deletingEval)}
@@ -152,7 +152,7 @@ export function EvaluationsList({ courseId, evaluations, totalWeight, weightVali
       </div>
 
       {editingEval && (
-        <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
+        <EvaluationForm courseId={courseId} evaluation={editingEval} evaluations={evaluations} periods={periods} selectedPeriodId={selectedPeriodId} onClose={() => setEditingEval(null)} onSave={() => { setEditingEval(null); onUpdate?.(); }} />
       )}
 
       <ConfirmDialog

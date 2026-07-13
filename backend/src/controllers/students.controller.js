@@ -5,8 +5,8 @@ const Grade = require('../models/Grade');
 const Observation = require('../models/Observation');
 const Evaluation = require('../models/Evaluation');
 const Course = require('../models/Course');
-const { weightedAverage, getSituacion } = require('../utils/gradeCalculator');
 const { getEffectiveWeight } = require('../utils/evaluationWeights');
+const { buildStudentSummary, sortedPeriods } = require('../utils/periods');
 
 async function verifyCourse(courseId, userId) {
   const course = await Course.findOne({ _id: courseId, userId });
@@ -24,11 +24,9 @@ async function list(req, res, next) {
     const evaluations = await Evaluation.find({ courseId }).sort({ order: 1 });
     const grades = await Grade.find({ courseId });
     const course = await Course.findById(courseId);
-    const { passGrade, decimals } = course.gradeConfig;
-
     const enriched = students.map((s) => {
       const sg = grades.filter((g) => g.studentId.toString() === s._id.toString());
-      const avg = weightedAverage(sg, evaluations, decimals);
+      const summary = buildStudentSummary(sg, evaluations, course);
       return {
         id: s._id,
         listNumber: s.listNumber,
@@ -36,8 +34,9 @@ async function list(req, res, next) {
         firstName: s.firstName,
         fullName: `${s.lastName} ${s.firstName}`,
         status: s.status,
-        average: avg,
-        situacion: getSituacion(avg, passGrade)
+        average: summary.annualAverage,
+        situacion: summary.annualStatus,
+        ...summary
       };
     });
 
@@ -87,13 +86,13 @@ async function getOne(req, res, next) {
 
     if (!student) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Alumno no encontrado' } });
 
-    const { passGrade, decimals } = course.gradeConfig;
-    const avg = weightedAverage(grades, evaluations, decimals);
+    const summary = buildStudentSummary(grades, evaluations, course);
 
     const gradesList = evaluations.map((ev) => {
       const g = grades.find((gr) => gr.evaluationId.toString() === ev._id.toString());
       return {
         evaluationId: ev._id,
+        periodId: ev.periodId || sortedPeriods(course)[0]?._id,
         evaluationName: ev.name,
         type: ev.type,
         date: ev.date,
@@ -111,8 +110,9 @@ async function getOne(req, res, next) {
       data: {
         student,
         grades: gradesList,
-        average: avg,
-        situacion: getSituacion(avg, passGrade),
+        average: summary.annualAverage,
+        situacion: summary.annualStatus,
+        ...summary,
         observations
       }
     });

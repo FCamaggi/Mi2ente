@@ -1,11 +1,25 @@
 const Student = require('../models/Student');
 const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
-const { weightedAverage, getSituacion, calcStats } = require('../utils/gradeCalculator');
+const { weightedAverage, calcStats } = require('../utils/gradeCalculator');
 const { getEffectiveWeight } = require('../utils/evaluationWeights');
+const { buildStudentSummary, sortedPeriods, evaluationsForPeriod } = require('../utils/periods');
 
-async function getCourseStats(courseId, gradeConfig) {
-  const { passGrade, decimals } = gradeConfig;
+function summarizeStudents(studentAverages, totalStudents, passGrade) {
+  const valid = studentAverages.filter(s => s.avg !== null);
+  const passed = valid.filter(s => s.avg >= passGrade).length;
+  return {
+    ...calcStats(studentAverages.map(s => s.avg)),
+    totalStudents,
+    studentsWithGrades: valid.length,
+    passed,
+    failed: valid.length - passed,
+    passRate: valid.length > 0 ? parseFloat((passed / valid.length).toFixed(3)) : 0
+  };
+}
+
+async function getCourseStats(courseId, gradeConfig, course) {
+  const { passGrade } = gradeConfig;
   const [students, evaluations, grades] = await Promise.all([
     Student.find({ courseId, status: 'active' }),
     Evaluation.find({ courseId }),
@@ -14,7 +28,7 @@ async function getCourseStats(courseId, gradeConfig) {
 
   const averages = students.map(s => {
     const sg = grades.filter(g => g.studentId.toString() === s._id.toString());
-    return weightedAverage(sg, evaluations, decimals);
+    return buildStudentSummary(sg, evaluations, course).annualAverage;
   });
 
   const valid = averages.filter(a => a !== null);
@@ -31,7 +45,7 @@ async function getCourseStats(courseId, gradeConfig) {
   };
 }
 
-async function getDetailedStats(courseId, gradeConfig) {
+async function getDetailedStats(courseId, gradeConfig, course, options = {}) {
   const { passGrade, decimals } = gradeConfig;
   const [students, evaluations, grades] = await Promise.all([
     Student.find({ courseId, status: 'active' }),
@@ -39,16 +53,25 @@ async function getDetailedStats(courseId, gradeConfig) {
     Grade.find({ courseId })
   ]);
 
+  const periods = sortedPeriods(course);
+  const selectedPeriod = options.periodId
+    ? periods.find((period) => period._id.toString() === options.periodId.toString())
+    : null;
+  const selectedEvaluations = selectedPeriod
+    ? evaluationsForPeriod(evaluations, selectedPeriod._id, periods[0]?._id)
+    : evaluations;
+
   const studentAverages = students.map(s => {
     const sg = grades.filter(g => g.studentId.toString() === s._id.toString());
-    return { student: s, avg: weightedAverage(sg, evaluations, decimals) };
+    const avg = selectedPeriod
+      ? weightedAverage(sg, selectedEvaluations, decimals)
+      : buildStudentSummary(sg, evaluations, course).annualAverage;
+    return { student: s, avg };
   });
 
-  const valid = studentAverages.filter(s => s.avg !== null);
-  const passed = valid.filter(s => s.avg >= passGrade).length;
-  const overall = { ...calcStats(studentAverages.map(s => s.avg)), totalStudents: students.length, studentsWithGrades: valid.length, passed, failed: valid.length - passed, passRate: valid.length > 0 ? parseFloat((passed / valid.length).toFixed(3)) : 0 };
+  const overall = summarizeStudents(studentAverages, students.length, passGrade);
 
-  const byEvaluation = evaluations.map(ev => {
+  const byEvaluation = (selectedPeriod ? selectedEvaluations : []).map(ev => {
     const evGrades = grades.filter(g => g.evaluationId.toString() === ev._id.toString() && g.status === 'graded' && g.value !== null);
     const values = evGrades.map(g => g.value);
     const avg = values.length > 0 ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)) : null;
@@ -81,7 +104,16 @@ async function getDetailedStats(courseId, gradeConfig) {
     .map(s => ({ studentId: s.student._id, name: `${s.student.lastName} ${s.student.firstName}`, average: s.avg }))
     .sort((a, b) => a.average - b.average);
 
-  return { overall, byEvaluation, failed };
+  const byPeriod = periods.map((period) => {
+    const values = students.map((student) => {
+      const sg = grades.filter((grade) => grade.studentId.toString() === student._id.toString());
+      const pe = evaluationsForPeriod(evaluations, period._id, periods[0]?._id);
+      return weightedAverage(sg, pe, decimals);
+    });
+    return { periodId: period._id, name: period.name, weight: period.weight, ...calcStats(values) };
+  });
+
+  return { scope: selectedPeriod ? 'period' : 'annual', periodId: selectedPeriod?._id || null, overall, byEvaluation, byPeriod, failed };
 }
 
 module.exports = { getCourseStats, getDetailedStats };

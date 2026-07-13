@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ClipboardList, ClipboardPlus, Download, HelpCircle, Plus, Upload, UserPlus, Users, BarChart3 } from 'lucide-react';
@@ -12,6 +12,7 @@ import { studentsApi } from '../../api/students.api';
 import { evaluationsApi } from '../../api/evaluations.api';
 import { gradesApi } from '../../api/grades.api';
 import { GradeGrid } from '../../components/grades/GradeGrid';
+import { AnnualGradeSummary } from '../../components/grades/AnnualGradeSummary';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -38,6 +39,7 @@ export function CourseDetailPage() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importSummary, setImportSummary] = useState(null);
+  const [selectedScope, setSelectedScope] = useState('');
 
   const { data: courseData } = useQuery({ queryKey: ['course', courseId], queryFn: () => coursesApi.getOne(courseId) });
   const { data: studentsData, refetch: refetchStudents } = useQuery({ queryKey: ['students', courseId], queryFn: () => studentsApi.list(courseId) });
@@ -45,9 +47,20 @@ export function CourseDetailPage() {
   const { data: gradesData, refetch: refetchGrades } = useQuery({ queryKey: ['grades', courseId], queryFn: () => gradesApi.listByCourse(courseId) });
 
   const course = courseData?.course;
+  const periods = useMemo(() => [...(course?.periods || [])].sort((a, b) => a.order - b.order), [course?.periods]);
   const students = studentsData?.students ?? [];
   const evaluations = evalsData?.evaluations ?? [];
   const grades = gradesData?.grades ?? [];
+  const activePeriodId = selectedScope === 'annual' ? null : selectedScope;
+  const visibleEvaluations = useMemo(() => {
+    if (!activePeriodId) return evaluations;
+    return evaluations.filter((evaluation) => String(evaluation.periodId || periods[0]?._id) === String(activePeriodId));
+  }, [evaluations, activePeriodId, periods]);
+  const activeTotal = evalsData?.totalsByPeriod?.find((item) => String(item.periodId) === String(activePeriodId));
+
+  useEffect(() => {
+    if (!selectedScope && periods.length) setSelectedScope(String(periods[0]._id || periods[0].id));
+  }, [periods, selectedScope]);
 
   const studentRowsForPdf = useMemo(() => {
     return students.map((student) => {
@@ -56,14 +69,15 @@ export function CourseDetailPage() {
         student.lastName,
         student.firstName
       ];
-      evaluations.forEach((evaluation) => {
+      visibleEvaluations.forEach((evaluation) => {
         const grade = grades.find((item) => item.studentId === student.id && item.evaluationId === (evaluation._id || evaluation.id));
         row.push(grade?.status === 'absent' ? 'Aus' : grade?.status === 'exempt' ? 'Exen' : grade?.value ?? '—');
       });
-      row.push(student.average ?? '—');
+      const periodAverage = student.periodAverages?.find((item) => String(item.periodId) === String(activePeriodId))?.average;
+      row.push(activePeriodId ? periodAverage ?? '—' : student.annualAverage ?? '—');
       return row;
     });
-  }, [students, evaluations, grades]);
+  }, [students, visibleEvaluations, grades, activePeriodId]);
 
   const invalidateCourseData = async () => {
     await Promise.all([
@@ -77,7 +91,7 @@ export function CourseDetailPage() {
 
   const handleExportExcel = async () => {
     try {
-      const res = await coursesApi.exportExcel(courseId);
+      const res = await coursesApi.exportExcel(courseId, activePeriodId ? { periodId: activePeriodId } : { scope: 'annual' });
       const filename = `${course?.name?.replace(/[^a-z0-9]/gi, '_')}_${course?.academicYear}.xlsx`;
       coursesApi.downloadBlob(res.data, filename);
     } catch {
@@ -93,14 +107,29 @@ export function CourseDetailPage() {
       doc.setFontSize(10);
       doc.text([course?.subject, course?.level, course?.academicYear].filter(Boolean).join(' · '), 14, 22);
 
-      autoTable(doc, {
+      if (selectedScope === 'annual') {
+        autoTable(doc, {
+          startY: 28,
+          styles: { fontSize: 8 },
+          head: [['N°', 'Apellido', 'Nombre', ...periods.map((period) => `${period.name} (${period.weight}%)`), 'Promedio anual', 'Situación', 'Estado']],
+          body: students.map((student) => [
+            student.listNumber,
+            student.lastName,
+            student.firstName,
+            ...periods.map((period) => student.periodAverages?.find((item) => String(item.periodId) === String(period._id))?.average ?? '—'),
+            student.annualAverage ?? '—',
+            student.annualStatus === 'aprobado' ? 'Aprobado/a' : student.annualStatus === 'reprobado' ? 'Reprobado/a' : 'Sin notas',
+            student.provisional ? 'Provisional' : 'Final'
+          ])
+        });
+      } else autoTable(doc, {
         startY: 28,
         styles: { fontSize: 8 },
         head: [[
           'N°',
           'Apellido',
           'Nombre',
-          ...evaluations.map((evaluation) => {
+          ...visibleEvaluations.map((evaluation) => {
             const label = evaluation.groupName ? `${evaluation.name} (${evaluation.groupName})` : evaluation.name;
             return `${label} ${getEffectiveWeight(evaluation).toFixed(1)}%`;
           }),
@@ -146,7 +175,7 @@ export function CourseDetailPage() {
     <div className="flex-1 min-h-0 flex flex-col">
       {activeTab === 'grades' && (
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          {students.length === 0 || evaluations.length === 0 ? (
+          {students.length === 0 || (selectedScope === 'annual' ? evaluations : visibleEvaluations).length === 0 ? (
             <EmptyState
               emoji="📝"
               title={students.length === 0 ? 'Agrega alumnos para comenzar' : 'Define las evaluaciones del curso primero'}
@@ -158,9 +187,14 @@ export function CourseDetailPage() {
               }
             />
           ) : (
-            <GradeGrid
+            selectedScope === 'annual' ? <AnnualGradeSummary
               students={students}
-              evaluations={evaluations}
+              periods={periods}
+              course={course}
+              onStudentClick={setSelectedStudent}
+            /> : <GradeGrid
+              students={students}
+              evaluations={visibleEvaluations}
               grades={grades}
               course={course}
               onStudentClick={setSelectedStudent}
@@ -189,23 +223,36 @@ export function CourseDetailPage() {
               <h2 className="font-semibold text-[var(--color-text-primary)]">Evaluaciones</h2>
               <Button size="sm" onClick={() => setShowAddEval(true)}><Plus size={14} /> Agregar</Button>
             </div>
-            <EvaluationsList
+            {selectedScope === 'annual' ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {periods.map((period) => {
+                  const total = evalsData?.totalsByPeriod?.find((item) => String(item.periodId) === String(period._id));
+                  const count = evaluations.filter((evaluation) => String(evaluation.periodId || periods[0]?._id) === String(period._id)).length;
+                  return <button key={period._id} onClick={() => setSelectedScope(String(period._id))} className="text-left rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                    <span className="font-semibold text-[var(--color-text-primary)]">{period.name}</span>
+                    <span className="block text-sm text-[var(--color-text-secondary)]">{count} evaluaciones · {total?.totalWeight?.toFixed?.(1) ?? 0}%</span>
+                  </button>;
+                })}
+              </div>
+            ) : <EvaluationsList
               courseId={courseId}
-              evaluations={evaluations}
-              totalWeight={evalsData?.totalWeight ?? 0}
-              weightValid={evalsData?.weightValid ?? false}
+              evaluations={visibleEvaluations}
+              totalWeight={activeTotal?.totalWeight ?? 0}
+              weightValid={activeTotal?.weightValid ?? false}
+              periods={periods}
+              selectedPeriodId={activePeriodId}
               onUpdate={async () => {
                 await refetchEvals();
                 await invalidateCourseData();
               }}
-            />
+            />}
           </div>
         </div>
       )}
 
       {activeTab === 'stats' && (
         <div className="flex-1 overflow-y-auto">
-          <CourseStats courseId={courseId} passGrade={course.gradeConfig?.passGrade ?? 4} />
+          <CourseStats courseId={courseId} periodId={activePeriodId} passGrade={course.gradeConfig?.passGrade ?? 4} />
         </div>
       )}
     </div>
@@ -228,6 +275,9 @@ export function CourseDetailPage() {
       {showAddEval && (
         <EvaluationForm
           courseId={courseId}
+          evaluations={evaluations}
+          periods={periods}
+          selectedPeriodId={activePeriodId || periods[0]?._id}
           onClose={() => setShowAddEval(false)}
           onSave={async () => {
             setShowAddEval(false);
@@ -295,6 +345,10 @@ export function CourseDetailPage() {
               )}
             </div>
           </div>
+          <select value={selectedScope} onChange={(event) => setSelectedScope(event.target.value)} className="mt-2 w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+            <option value="annual">Resumen anual</option>
+            {periods.map((period) => <option key={period._id} value={period._id}>{period.name}</option>)}
+          </select>
         </div>
 
         <CourseDetailPageMobile activeTab={activeTab} onTabChange={setActiveTab}>
@@ -319,6 +373,10 @@ export function CourseDetailPage() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap items-center">
+            <select value={selectedScope} onChange={(event) => setSelectedScope(event.target.value)} className="px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+              <option value="annual">Resumen anual</option>
+              {periods.map((period) => <option key={period._id} value={period._id}>{period.name}</option>)}
+            </select>
             <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImportStudents} />
             <Button variant="secondary" size="sm" onClick={handleExportExcel} title="Exportar a Excel" data-tour="export-btn">
               <Download size={14} /> <span className="hidden sm:inline">Excel</span>

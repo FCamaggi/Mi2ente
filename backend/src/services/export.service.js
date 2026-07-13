@@ -5,9 +5,12 @@ const Grade = require('../models/Grade');
 const Observation = require('../models/Observation');
 const { weightedAverage, getSituacion } = require('../utils/gradeCalculator');
 const { getEffectiveWeight } = require('../utils/evaluationWeights');
+const { buildStudentSummary, sortedPeriods } = require('../utils/periods');
 
 function buildEvaluationFilter(courseId, options = {}) {
   const filter = { courseId };
+  if (options.scope === 'annual') return filter;
+  if (options.periodId) filter.periodId = options.periodId;
   const ids = Array.isArray(options.evaluationIds)
     ? options.evaluationIds
     : String(options.evaluationIds || '')
@@ -42,6 +45,28 @@ async function toExcel(courseId, course, options = {}) {
   const { passGrade, decimals } = course.gradeConfig;
 
   const workbook = new ExcelJS.Workbook();
+  const periods = sortedPeriods(course);
+
+  if (options.scope === 'annual') {
+    const sheet = workbook.addWorksheet('Resumen anual');
+    sheet.addRow(['N°', 'Apellidos', 'Nombre', ...periods.map((period) => `${period.name} (${period.weight}%)`), 'Promedio anual', 'Situación', 'Estado']);
+    sheet.getRow(1).font = { bold: true };
+    students.forEach((student) => {
+      const studentGrades = grades.filter((grade) => grade.studentId.toString() === student._id.toString());
+      const summary = buildStudentSummary(studentGrades, evaluations, course);
+      sheet.addRow([
+        student.listNumber,
+        student.lastName,
+        student.firstName,
+        ...summary.periodAverages.map((period) => period.average ?? ''),
+        summary.annualAverage ?? '',
+        summary.annualStatus === 'aprobado' ? 'Aprobado/a' : summary.annualStatus === 'reprobado' ? 'Reprobado/a' : 'Sin notas',
+        summary.annualAverage === null ? 'Sin notas' : summary.provisional ? 'Provisional' : 'Final'
+      ]);
+    });
+    return workbook.xlsx.writeBuffer();
+  }
+
   const sheet = workbook.addWorksheet('Notas');
 
   sheet.addRow([
@@ -90,11 +115,22 @@ async function studentToExcel(courseId, course, studentId, options = {}) {
   const sit = getSituacion(avg, passGrade);
 
   const workbook = new ExcelJS.Workbook();
+  const periods = sortedPeriods(course);
   const summary = workbook.addWorksheet('Resumen');
   summary.addRow(['Curso', course.name]);
   summary.addRow(['Alumno', `${student.lastName} ${student.firstName}`]);
   summary.addRow(['N° lista', student.listNumber]);
-  summary.addRow(['Promedio', avg ?? '']);
+  if (options.scope === 'annual') {
+    const annualSummary = buildStudentSummary(grades, evaluations, course);
+    periods.forEach((period) => {
+      const value = annualSummary.periodAverages.find((item) => item.periodId.toString() === period._id.toString())?.average;
+      summary.addRow([`Promedio ${period.name}`, value ?? '']);
+    });
+    summary.addRow(['Promedio anual', annualSummary.annualAverage ?? '']);
+    summary.addRow(['Estado anual', annualSummary.provisional ? 'Provisional' : 'Final']);
+  } else {
+    summary.addRow(['Promedio', avg ?? '']);
+  }
   summary.addRow(['Situación', sit === 'aprobado' ? 'Aprobado/a' : sit === 'reprobado' ? 'Reprobado/a' : 'Sin notas']);
   summary.getColumn(1).font = { bold: true };
 

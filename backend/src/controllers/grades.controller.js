@@ -1,7 +1,7 @@
 const Grade = require('../models/Grade');
 const Evaluation = require('../models/Evaluation');
 const Course = require('../models/Course');
-const { weightedAverage, getSituacion } = require('../utils/gradeCalculator');
+const { buildStudentSummary } = require('../utils/periods');
 
 async function verifyCourse(courseId, userId) {
   return Course.findOne({ _id: courseId, userId });
@@ -25,6 +25,8 @@ async function upsertGrade(req, res, next) {
     if (!course) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Acceso denegado' } });
 
     const { status = 'graded', note = '' } = req.body;
+    const evaluation = await Evaluation.findOne({ _id: evalId, courseId });
+    if (!evaluation) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Evaluación no encontrada' } });
     const value = status === 'graded' && req.body.value !== null && req.body.value !== undefined && req.body.value !== ''
       ? Number(req.body.value)
       : null;
@@ -40,10 +42,9 @@ async function upsertGrade(req, res, next) {
       Evaluation.find({ courseId })
     ]);
 
-    const avg = weightedAverage(allGrades, evaluations, course.gradeConfig.decimals);
-    const situacion = getSituacion(avg, course.gradeConfig.passGrade);
+    const summary = buildStudentSummary(allGrades, evaluations, course);
 
-    res.json({ success: true, data: { grade, studentAverage: avg, studentSituacion: situacion } });
+    res.json({ success: true, data: { grade, studentAverage: summary.annualAverage, studentSituacion: summary.annualStatus, ...summary } });
   } catch (err) { next(err); }
 }
 

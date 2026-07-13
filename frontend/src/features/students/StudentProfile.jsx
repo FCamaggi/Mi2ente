@@ -102,7 +102,7 @@ export function StudentProfile({ courseId, student, course, onClose, onUpdate })
                   className="rounded-[var(--radius-lg)] p-5 mb-6 text-center"
                   style={{ background: avg !== null ? (avg >= passGrade ? 'var(--color-grade-ok)' : 'var(--color-grade-fail)') : 'var(--color-surface-2)' }}
                 >
-                  <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wide mb-1">Promedio general</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wide mb-1">Promedio anual</p>
                   <p
                     className="text-4xl font-bold font-mono"
                     style={{ color: avg !== null ? (avg >= passGrade ? 'var(--color-grade-ok-text)' : 'var(--color-grade-fail-text)') : 'var(--color-text-muted)' }}
@@ -110,18 +110,31 @@ export function StudentProfile({ courseId, student, course, onClose, onUpdate })
                     {avg !== null ? avg.toFixed(1) : '—'}
                   </p>
                   <div className="mt-2"><Badge situacion={sit} /></div>
+                  {data?.provisional && <p className="mt-1 text-xs text-[var(--color-warning)]">Promedio provisional</p>}
                 </div>
+
+                {course?.periods?.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mb-6">
+                    {[...course.periods].sort((a, b) => a.order - b.order).map((period) => {
+                      const periodAverage = data?.periodAverages?.find((item) => String(item.periodId) === String(period._id))?.average;
+                      return <div key={period._id} className="rounded-[var(--radius-sm)] border border-[var(--color-border)] p-3 text-center">
+                        <p className="text-xs text-[var(--color-text-secondary)]">{period.name}</p>
+                        <p className="font-mono font-bold text-[var(--color-text-primary)]">{periodAverage == null ? '—' : periodAverage.toFixed(course?.gradeConfig?.decimals ?? 1)}</p>
+                      </div>;
+                    })}
+                  </div>
+                )}
 
                 {data?.grades && data.grades.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Notas por evaluación</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Notas por período</h3>
                     <div className="flex flex-col gap-2">
                       {data.grades.map((g) => (
                         <div key={g.evaluationId} className="flex items-center justify-between text-sm">
                           <div className="flex-1 min-w-0">
                             <span className="text-[var(--color-text-primary)] truncate block">{g.evaluationName}</span>
                           <span className="text-xs text-[var(--color-text-secondary)]">
-                            {g.groupName ? `${g.effectiveWeight?.toFixed?.(1) ?? g.effectiveWeight}% · ${g.groupName}` : `${g.weight}%`}
+                            {course?.periods?.find((period) => String(period._id) === String(g.periodId))?.name || 'Período'} · {g.groupName ? `${g.effectiveWeight?.toFixed?.(1) ?? g.effectiveWeight}% · ${g.groupName}` : `${g.weight}%`}
                           </span>
                           </div>
                           <span

@@ -173,6 +173,12 @@ courseSchema.index({ userId: 1, status: 1 });
 courseSchema.index({ userId: 1, academicYear: 1 });
 ```
 
+### Períodos académicos
+
+Cada curso incluye `periods: [{ _id, name, weight, order }]`. Debe existir al menos uno y sus pesos deben sumar 100%. Cada `Evaluation` guarda un `periodId` perteneciente al curso; sus ponderaciones y grupos se validan dentro de ese período.
+
+Los promedios anuales se forman ponderando los promedios de período. Mientras falten períodos con notas, se normalizan los pesos disponibles y el resultado se expone como provisional.
+
 ---
 
 ## 3. Student

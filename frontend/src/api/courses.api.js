@@ -7,7 +7,7 @@ export const coursesApi = {
   update: (id, data) => client.patch(`/courses/${id}`, data).then(r => r.data.data),
   remove: (id) => client.delete(`/courses/${id}`).then(r => r.data.data),
   duplicate: (id, data) => client.post(`/courses/${id}/duplicate`, data).then(r => r.data.data),
-  getStats: (id) => client.get(`/courses/${id}/stats`).then(r => r.data.data),
+  getStats: (id, params) => client.get(`/courses/${id}/stats`, { params }).then(r => r.data.data),
   exportExcel: (id, params) => client.get(`/courses/${id}/export/excel`, { params, responseType: 'blob' }),
   downloadBlob: (blob, filename) => {
     const url = URL.createObjectURL(blob);

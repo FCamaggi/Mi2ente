@@ -59,6 +59,16 @@ const courseValidators = {
     body('description').optional().trim().isLength({ max: 500 }).withMessage('La descripción es demasiado larga'),
     body('academicYear').optional().isInt({ min: 2000, max: 2099 }).withMessage('El año académico debe estar entre 2000 y 2099'),
     body('status').optional().isIn(['active', 'archived']).withMessage('El estado del curso es inválido'),
+    body('periods').optional().isArray({ min: 1 }).withMessage('El curso debe tener al menos un período'),
+    body('periods.*.name').optional().trim().notEmpty().withMessage('Cada período debe tener nombre').isLength({ max: 80 }).withMessage('El nombre del período es demasiado largo'),
+    body('periods.*.weight').optional().isFloat({ min: 0, max: 100 }).withMessage('La ponderación del período debe estar entre 0 y 100'),
+    body('periods').optional().custom((periods) => {
+      const total = periods.reduce((sum, period) => sum + Number(period.weight || 0), 0);
+      if (Math.abs(total - 100) >= 0.1) throw new Error('Las ponderaciones de los períodos deben sumar 100%');
+      const names = periods.map((period) => period.name.trim().toLowerCase());
+      if (new Set(names).size !== names.length) throw new Error('Los nombres de los períodos no pueden repetirse');
+      return true;
+    }),
     ...gradeConfigFields,
     body('gradeConfig').optional().custom((_, { req }) => {
       const config = req.body.gradeConfig || {};
@@ -128,6 +138,7 @@ const evaluationValidators = {
     body('weight').optional().isFloat({ min: 0, max: 100 }).withMessage('La ponderación interna debe estar entre 0 y 100'),
     body('groupName').optional().trim().isLength({ max: 120 }).withMessage('El nombre del grupo es demasiado largo'),
     body('groupWeight').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('La ponderación del grupo debe estar entre 0 y 100'),
+    body('periodId').optional().isMongoId().withMessage('El período es inválido'),
     body().custom((_, { req }) => {
       if (req.body.groupName && (req.body.groupWeight === null || req.body.groupWeight === undefined || req.body.groupWeight === '')) {
         throw new Error('Si usas grupo, debes indicar la ponderación del grupo');

@@ -18,6 +18,8 @@ const REPORT_TYPES = {
 
 function buildExportParams(filters) {
   const params = {};
+  if (filters.periodId) params.periodId = filters.periodId;
+  if (filters.scope === 'annual') return { scope: 'annual' };
   if (filters.from) params.from = filters.from;
   if (filters.to) params.to = filters.to;
   if (filters.evaluationIds.length > 0) params.evaluationIds = filters.evaluationIds.join(',');
@@ -35,6 +37,7 @@ export function ReportsPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [evaluationIds, setEvaluationIds] = useState([]);
+  const [periodScope, setPeriodScope] = useState('annual');
   const [downloading, setDownloading] = useState('');
 
   const { data: coursesData, isLoading: loadingCourses } = useQuery({
@@ -49,6 +52,7 @@ export function ReportsPage() {
   }, [courseId, courses]);
 
   const selectedCourse = courses.find((course) => getId(course) === courseId);
+  const periods = [...(selectedCourse?.periods || [])].sort((a, b) => a.order - b.order);
 
   const { data: studentsData } = useQuery({
     queryKey: ['students', courseId],
@@ -75,6 +79,7 @@ export function ReportsPage() {
   useEffect(() => {
     setStudentId('');
     setEvaluationIds([]);
+    setPeriodScope('annual');
   }, [courseId]);
 
   useEffect(() => {
@@ -84,14 +89,14 @@ export function ReportsPage() {
   }, [reportType, studentId, students]);
 
   const filteredEvaluations = useMemo(() => (
-    filterEvaluations(evaluations, { from, to, evaluationIds })
-  ), [evaluations, from, to, evaluationIds]);
+    filterEvaluations(evaluations, { from, to, evaluationIds, periodId: periodScope === 'annual' ? null : periodScope })
+  ), [evaluations, from, to, evaluationIds, periodScope]);
 
   const toggleEvaluation = (id) => {
     setEvaluationIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
   };
 
-  const filters = { from, to, evaluationIds };
+  const filters = { from, to, evaluationIds, periodId: periodScope === 'annual' ? null : periodScope, scope: periodScope === 'annual' ? 'annual' : 'period' };
 
   const downloadCoursePdf = () => {
     if (!selectedCourse) return;
@@ -175,6 +180,11 @@ export function ReportsPage() {
             <option value={REPORT_TYPES.student}>Ficha individual del alumno</option>
           </Select>
 
+          <Select label="Período" value={periodScope} onChange={(event) => { setPeriodScope(event.target.value); setEvaluationIds([]); }}>
+            <option value="annual">Resumen anual</option>
+            {periods.map((period) => <option key={getId(period)} value={getId(period)}>{period.name}</option>)}
+          </Select>
+
           {reportType === REPORT_TYPES.student && (
             <Select label="Alumno" value={studentId} onChange={(event) => setStudentId(event.target.value)}>
               {students.map((student) => (
@@ -185,17 +195,17 @@ export function ReportsPage() {
             </Select>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+          {periodScope !== 'annual' && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
             <Input label="Desde" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
             <Input label="Hasta" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-          </div>
+          </div>}
 
-          <div className="flex flex-col gap-2">
+          {periodScope !== 'annual' && <div className="flex flex-col gap-2">
             <p className="text-sm font-medium text-[var(--color-text-primary)]">Evaluaciones</p>
             <div className="max-h-64 overflow-auto rounded-[var(--radius-sm)] border border-[var(--color-border)]">
               {evaluations.length === 0 ? (
                 <p className="text-sm text-[var(--color-text-secondary)] p-3">Sin evaluaciones.</p>
-              ) : evaluations.map((evaluation) => {
+              ) : filteredEvaluations.map((evaluation) => {
                 const id = getId(evaluation);
                 return (
                   <label key={id} className="flex items-start gap-2 px-3 py-2 border-b last:border-b-0 border-[var(--color-border)] text-sm">
@@ -215,7 +225,7 @@ export function ReportsPage() {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           <div className="flex gap-2 pt-2">
             <Button onClick={handlePdf} disabled={!courseId || (reportType === REPORT_TYPES.student && !studentId)} loading={downloading === 'student-pdf'}>
@@ -232,13 +242,16 @@ export function ReportsPage() {
             <div>
               <h2 className="font-semibold text-[var(--color-text-primary)]">Vista previa</h2>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                {filteredEvaluations.length} evaluacion{filteredEvaluations.length !== 1 ? 'es' : ''} incluidas
+                {periodScope === 'annual' ? `${periods.length} períodos incluidos` : `${filteredEvaluations.length} evaluación${filteredEvaluations.length !== 1 ? 'es' : ''} incluidas`}
               </p>
             </div>
             <Download size={18} className="text-[var(--color-text-secondary)]" />
           </div>
           <div className="p-4 overflow-auto">
-            <table className="w-full text-sm">
+            {periodScope === 'annual' ? <table className="w-full text-sm">
+              <thead><tr className="text-left text-[var(--color-text-secondary)]"><th className="py-2">Período</th><th className="py-2 text-right">Peso anual</th></tr></thead>
+              <tbody>{periods.map((period) => <tr key={getId(period)} className="border-t border-[var(--color-border)]"><td className="py-2">{period.name}</td><td className="py-2 text-right font-mono">{period.weight}%</td></tr>)}</tbody>
+            </table> : <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[var(--color-text-secondary)]">
                   <th className="py-2 pr-3">Evaluacion</th>
@@ -255,8 +268,8 @@ export function ReportsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-            {filteredEvaluations.length === 0 && (
+            </table>}
+            {periodScope !== 'annual' && filteredEvaluations.length === 0 && (
               <p className="text-sm text-center py-8 text-[var(--color-text-secondary)]">
                 No hay evaluaciones para los filtros seleccionados.
               </p>
