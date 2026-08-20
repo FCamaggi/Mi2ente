@@ -29,9 +29,31 @@ export function LoginPage() {
     }
   };
 
+  const defaultUrl = import.meta.env.VITE_API_URL || 'https://mi2ente-api.onrender.com/api';
+  const vercelUrl = import.meta.env.VITE_VERCEL_API_URL || 'https://mi2ente-api.vercel.app/api';
+  const [selectedBackend, setSelectedBackend] = useState(
+    localStorage.getItem('api_backend_url') || defaultUrl
+  );
+
+  const handleBackendChange = (e) => {
+    const url = e.target.value;
+    setSelectedBackend(url);
+    localStorage.setItem('api_backend_url', url);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] p-4">
       <div className="w-full max-w-sm">
+        <div className="text-center mb-4">
+          <select
+            value={selectedBackend}
+            onChange={handleBackendChange}
+            className="text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-text-secondary)] w-full mb-4"
+          >
+            <option value={defaultUrl}>Servidor Principal (Render)</option>
+            <option value={vercelUrl}>Servidor de Respaldo (Vercel)</option>
+          </select>
+        </div>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold font-display text-[var(--color-primary-500)]">Mi2ente</h1>
           <p className="text-[var(--color-text-secondary)] mt-1">Gestión de notas para docentes</p>

@@ -2,8 +2,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 
+export const getBaseURL = () => {
+  return localStorage.getItem('api_backend_url') || import.meta.env.VITE_API_URL || '/api';
+};
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: getBaseURL(),
   withCredentials: true,
   timeout: 15000
 });
@@ -40,6 +44,7 @@ function _onEnd() {
 }
 
 client.interceptors.request.use((config) => {
+  config.baseURL = getBaseURL(); // Update dynamically before each request
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   _onStart();
@@ -74,7 +79,7 @@ client.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL || '/api'}/auth/refresh`,
+          `${getBaseURL()}/auth/refresh`,
           {},
           { withCredentials: true }
         );
