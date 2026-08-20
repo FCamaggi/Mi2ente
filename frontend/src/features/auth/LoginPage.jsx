@@ -14,6 +14,21 @@ export function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { user, accessToken } = await authApi.login(form);
+      setAuth(user, accessToken);
+      if (user.theme) setTheme(user.theme);
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const defaultUrl = import.meta.env.VITE_API_URL || 'https://mi2ente-api.onrender.com/api';
   const vercelUrl = import.meta.env.VITE_VERCEL_API_URL || 'https://mi2ente-api.vercel.app/api';
   const [selectedBackend, setSelectedBackend] = useState(
@@ -25,6 +40,7 @@ export function LoginPage() {
     setSelectedBackend(url);
     localStorage.setItem('api_backend_url', url);
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,6 +70,7 @@ export function LoginPage() {
             <option value={vercelUrl}>Servidor de Respaldo (Vercel)</option>
           </select>
         </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold font-display text-[var(--color-primary-500)]">Mi2ente</h1>
           <p className="text-[var(--color-text-secondary)] mt-1">Gestión de notas para docentes</p>
