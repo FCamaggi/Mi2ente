@@ -10,6 +10,7 @@ const client = axios.create({
   baseURL: getBaseURL(),
   withCredentials: true,
   timeout: 15000
+
 });
 
 // Render cold-start warning: show a toast if any request takes > 5 s
@@ -43,8 +44,9 @@ function _onEnd() {
   }
 }
 
+
 client.interceptors.request.use((config) => {
-  config.baseURL = getBaseURL(); // Update dynamically before each request
+  config.baseURL = getBaseURL(); // Actualizar dinámicamente
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   _onStart();
@@ -78,6 +80,7 @@ client.interceptors.response.use(
       isRefreshing = true;
 
       try {
+
         const { data } = await axios.post(
           `${getBaseURL()}/auth/refresh`,
           {},
