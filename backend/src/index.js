@@ -67,10 +67,14 @@ app.use(errorHandler);
 
 async function startServer() {
   await connectDB();
-  app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+  }
 }
 
 startServer().catch((err) => {
   console.error('No se pudo iniciar el servidor:', err.message);
   process.exit(1);
 });
+
+module.exports = app;
