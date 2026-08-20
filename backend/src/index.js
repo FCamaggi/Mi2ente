@@ -19,6 +19,8 @@ const debugRoutes = require('./routes/debug.routes');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+app.set('trust proxy', 1);
+
 app.use(helmet());
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
