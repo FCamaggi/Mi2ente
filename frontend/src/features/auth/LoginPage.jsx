@@ -14,21 +14,6 @@ export function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { user, accessToken } = await authApi.login(form);
-      setAuth(user, accessToken);
-      if (user.theme) setTheme(user.theme);
-      navigate('/dashboard');
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const defaultUrl = import.meta.env.VITE_API_URL || 'https://mi2ente-api.onrender.com/api';
   const vercelUrl = import.meta.env.VITE_VERCEL_API_URL || 'https://mi2ente-api.vercel.app/api';
   const [selectedBackend, setSelectedBackend] = useState(
